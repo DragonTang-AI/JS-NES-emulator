@@ -109,16 +109,28 @@ class SaveManager {
     document.getElementById("save-game-name").textContent = this.emulator.getCurrentRom();
     this._setSyncStatus("", false);
 
+    this.overlay.classList.remove("hidden");
+    await this._renderSlots();
+
     if (this.emulator.isCloudReachable()) {
-      this._setSyncStatus("正在加载云存档...", false);
-      await this.emulator.syncCloudSaves();
-      this._setSyncStatus("云存档已同步", false);
+      this._setSyncStatus("正在同步云存档...", false);
+      const result = await this.emulator.syncCloudSaves();
+      if (result.ok) {
+        const parts = [];
+        if (result.pushed > 0) parts.push(result.pushed + " 个上传");
+        if (result.pulled > 0) parts.push(result.pulled + " 个下载");
+        if (result.failed > 0) parts.push(result.failed + " 个失败");
+        const msg = parts.length > 0 ? "同步完成：" + parts.join("，") : "所有存档已是最新";
+        this._setSyncStatus(msg, result.failed > 0);
+      } else if (result.reason === "auth_expired") {
+        this._setSyncStatus("登录已过期，请重新登录", true);
+      } else {
+        this._setSyncStatus("同步失败，请稍后重试", true);
+      }
+      await this._renderSlots();
     } else if (this.emulator.isCloudAuthed()) {
       this._setSyncStatus("已登录但离线，仅显示本地存档", true);
     }
-
-    await this._renderSlots();
-    this.overlay.classList.remove("hidden");
   }
 
   close() {

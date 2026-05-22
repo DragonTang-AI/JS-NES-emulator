@@ -650,68 +650,73 @@ this.onStatusUpdate("已从云存档读取 Slot " + slot + cloudUser);
   }
 
   async syncCloudSaves(onProgress) {
-    if (!this.currentRom || !this.saveDB) {
-      return { ok: false, reason: "no_game" };
-    }
-    if (!this.isCloudReachable()) {
-      return { ok: false, reason: this.cloudToken ? "offline" : "no_login" };
-    }
+    try {
+      if (!this.currentRom || !this.saveDB) {
+        return { ok: false, reason: "no_game" };
+      }
+      if (!this.isCloudReachable()) {
+        return { ok: false, reason: this.cloudToken ? "offline" : "no_login" };
+      }
 
-    let pushed = 0, pulled = 0, failed = 0;
+      let pushed = 0, pulled = 0, failed = 0;
 
-    const cloudList = await this._cloudFetch(
-      "/saves/" + encodeURIComponent(this.currentRom)
-    );
-    const cloudMap = {};
-    if (cloudList && !cloudList._error && Array.isArray(cloudList.saves)) {
-      cloudList.saves.forEach(s => { cloudMap[s.slot] = s.timestamp || 0; });
-    } else if (cloudList && cloudList._error === "http_401") {
-      return { ok: false, reason: "auth_expired" };
-    }
+      const cloudList = await this._cloudFetch(
+        "/saves/" + encodeURIComponent(this.currentRom)
+      );
+      const cloudMap = {};
+      if (cloudList && !cloudList._error && Array.isArray(cloudList.saves)) {
+        cloudList.saves.forEach(s => { cloudMap[s.slot] = s.timestamp || 0; });
+      } else if (cloudList && cloudList._error === "http_401") {
+        return { ok: false, reason: "auth_expired" };
+      }
 
-    for (let i = 0; i < this.maxSaveSlots; i++) {
-      if (onProgress) onProgress(i, this.maxSaveSlots, "同步中...");
+      for (let i = 0; i < this.maxSaveSlots; i++) {
+        if (onProgress) onProgress(i, this.maxSaveSlots, "同步中...");
 
-      const key = this.currentRom + "_slot" + i;
-      let localData = null;
-      try {
-        localData = await new Promise((resolve, reject) => {
-          const tx = this.saveDB.transaction("saves", "readonly");
-          const store = tx.objectStore("saves");
-          const req = store.get(key);
-          req.onsuccess = () => resolve(req.result);
-          req.onerror = () => reject(req.error);
-        });
-      } catch (e) { /* skip */ }
-
-      const localTs = localData ? localData.timestamp : 0;
-      const cloudTs = cloudMap[i] || 0;
-
-      if (localTs > cloudTs && localData) {
-        const r = await this._cloudFetch(
-          "/saves/" + encodeURIComponent(this.currentRom) + "/" + i,
-          { method: "PUT", body: JSON.stringify({ state: localData.state, timestamp: localTs }) }
-        );
-        if (r && !r._error) pushed++;
-        else failed++;
-      } else if (cloudTs > localTs) {
-        const cloudData = await this._cloudFetch(
-          "/saves/" + encodeURIComponent(this.currentRom) + "/" + i
-        );
-        if (cloudData && !cloudData._error && cloudData.state) {
-          try {
-            const tx = this.saveDB.transaction("saves", "readwrite");
+        const key = this.currentRom + "_slot" + i;
+        let localData = null;
+        try {
+          localData = await new Promise((resolve, reject) => {
+            const tx = this.saveDB.transaction("saves", "readonly");
             const store = tx.objectStore("saves");
-            store.put({ key, state: cloudData.state, timestamp: cloudData.timestamp, rom: this.currentRom });
-          } catch (e) { /* skip */ }
-          pulled++;
-        } else {
-          failed++;
+            const req = store.get(key);
+            req.onsuccess = () => resolve(req.result);
+            req.onerror = () => reject(req.error);
+          });
+        } catch (e) { /* skip */ }
+
+        const localTs = localData ? localData.timestamp : 0;
+        const cloudTs = cloudMap[i] || 0;
+
+        if (localTs > cloudTs && localData) {
+          const r = await this._cloudFetch(
+            "/saves/" + encodeURIComponent(this.currentRom) + "/" + i,
+            { method: "PUT", body: JSON.stringify({ state: localData.state, timestamp: localTs }) }
+          );
+          if (r && !r._error) pushed++;
+          else failed++;
+        } else if (cloudTs > localTs) {
+          const cloudData = await this._cloudFetch(
+            "/saves/" + encodeURIComponent(this.currentRom) + "/" + i
+          );
+          if (cloudData && !cloudData._error && cloudData.state) {
+            try {
+              const tx = this.saveDB.transaction("saves", "readwrite");
+              const store = tx.objectStore("saves");
+              store.put({ key, state: cloudData.state, timestamp: cloudData.timestamp, rom: this.currentRom });
+            } catch (e) { /* skip */ }
+            pulled++;
+          } else {
+            failed++;
+          }
         }
       }
-    }
 
-    return { ok: true, pushed, pulled, failed };
+      return { ok: true, pushed, pulled, failed };
+    } catch (e) {
+      console.warn("syncCloudSaves error:", e);
+      return { ok: false, reason: "error" };
+    }
   }
 
   _saveBatteryRam(address, value) {
