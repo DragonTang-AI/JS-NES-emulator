@@ -51,10 +51,6 @@ class H5App {
         cheats: [
           { name: "无限命", desc: "游戏结束后不会减少生命次数", codes: [{ address: 0x007B, value: 0x09 }] },
           { name: "血量无限", desc: "角色血量锁满，不会受伤", codes: [{ address: 0x007A, value: 0x06 }] },
-          { name: "闪烁无敌", desc: "开启后一段时间内敌人碰不到你", codes: [{ address: 0x0074, value: 0x55 }] },
-          { name: "金钱无限", desc: "购物时金钱不减反增", codes: [{ address: 0x007C, value: 0x0F }, { address: 0x007D, value: 0x27 }] },
-          { name: "所有武器", desc: "直接解锁全部枪械和道具", codes: [{ address: 0x0081, value: 0x5F }] },
-          { name: "随时放箭", desc: "按外挂开启键就能射箭，不用攒道具", codes: [{ address: 0x0527, value: 0x02 }] },
         ]
       }
     ];

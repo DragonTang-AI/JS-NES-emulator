@@ -303,7 +303,7 @@ class Emulator {
   _cheats = [];
 
   setCheats(cheats) {
-    this._cheats = (cheats || []).filter(c => c.enabled);
+    this._cheats = (cheats || []).filter(c => c && c.address !== undefined && c.value !== undefined);
   }
 
   _applyCheats() {
