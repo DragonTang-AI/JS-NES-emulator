@@ -174,7 +174,9 @@ class SaveManager {
       saveBtn.textContent = "保存";
       saveBtn.addEventListener("click", async () => {
         saveBtn.disabled = true;
+        this._setSyncStatus("正在保存到 Slot " + save.slot + " ...", false, true);
         const result = await this.emulator.saveState(save.slot);
+        this._setSyncStatus("", false);
         saveBtn.disabled = false;
         await this._renderSlots();
       });
