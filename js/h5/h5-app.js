@@ -55,6 +55,7 @@ class H5App {
     this.authSyncBtn = document.getElementById("auth-sync-btn");
     this.authToken = localStorage.getItem(this.authTokenKey) || null;
     this.authUser = null;
+    this.authPromptDismissed = localStorage.getItem("nes-auth-prompt-dismissed") === "1";
     this.currentFilter = null;
     this.currentRom = null;
     this.bundledROMs = [
@@ -90,6 +91,11 @@ class H5App {
       this.saveManager.init();
       this.bindEvents();
       await this.restoreAuthSession();
+      if (!this.authUser && !this.authPromptDismissed) {
+        setTimeout(() => {
+          this.authPromptModal.hidden = false;
+        }, 1500);
+      }
       this._syncSettingsUI();
       this._applySettings();
       this.updateStatus("Ready");
@@ -236,6 +242,8 @@ class H5App {
     if (this.authPromptGuest) {
       this.authPromptGuest.addEventListener("click", () => {
         this.authPromptModal.hidden = true;
+        this.authPromptDismissed = true;
+        localStorage.setItem("nes-auth-prompt-dismissed", "1");
         this.updateStatus("游客模式：可游玩，但无法永久云存档");
       });
     }
@@ -243,6 +251,8 @@ class H5App {
     if (this.authPromptLogin) {
       this.authPromptLogin.addEventListener("click", () => {
         this.authPromptModal.hidden = true;
+        this.authPromptDismissed = true;
+        localStorage.setItem("nes-auth-prompt-dismissed", "1");
         this.openMenu();
         this._toggleAccountSubpage(true);
         if (this.authUsername) this.authUsername.focus();
