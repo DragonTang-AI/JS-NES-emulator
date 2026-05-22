@@ -183,17 +183,17 @@ class H5App {
 
   bindEvents() {
     document.addEventListener("contextmenu", (e) => {
-      if (e.target.closest("#nes-container, #virtual-gamepad")) {
+      if (!e.target.closest("input, textarea")) {
         e.preventDefault();
       }
     });
     document.addEventListener("selectstart", (e) => {
-      if (e.target.closest("#nes-container, #virtual-gamepad")) {
+      if (!e.target.closest("input, textarea")) {
         e.preventDefault();
       }
     });
     document.addEventListener("dragstart", (e) => {
-      if (e.target.closest("#nes-container, #virtual-gamepad")) {
+      if (!e.target.closest("input, textarea")) {
         e.preventDefault();
       }
     });
