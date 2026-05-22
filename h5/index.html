@@ -95,13 +95,7 @@
           <span class="menu-item-arrow" id="menu-cheats-arrow">›</span>
         </div>
         <div class="menu-subpage" id="menu-cheats-subpage" hidden>
-          <div class="menu-cheats-header">游戏外挂（每帧自动写入）</div>
-          <div class="menu-cheats-hint">格式：AAAA-XX-VV，如 007B-01-09（无限命）</div>
-          <div class="menu-cheats-input-row">
-            <input id="cheat-code" type="text" maxlength="14" placeholder="输入外挂代码" class="cheat-code-input">
-            <button id="cheat-add-btn" class="cheat-add-btn">+</button>
-          </div>
-          <div class="menu-cheats-list" id="menu-cheats-list"></div>
+          <div class="menu-cheats-game-list" id="menu-cheats-game-list"></div>
         </div>
         <div class="menu-rom-list" id="slide-rom-list" hidden></div>
       </div>
@@ -157,6 +151,27 @@
       <div class="auth-prompt-actions">
         <button id="auth-prompt-login" type="button">去登录</button>
         <button id="auth-prompt-guest" type="button">游客模式继续</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="cheat-modal" class="cheat-modal" hidden>
+    <div class="cheat-modal-card">
+      <div class="cheat-modal-header">
+        <span id="cheat-modal-title">外挂</span>
+        <button id="cheat-modal-close" class="cheat-modal-close">×</button>
+      </div>
+      <div class="cheat-modal-body">
+        <table class="cheat-table">
+          <thead>
+            <tr>
+              <th class="cheat-th-name">能力</th>
+              <th class="cheat-th-desc">介绍</th>
+              <th class="cheat-th-toggle">状态</th>
+            </tr>
+          </thead>
+          <tbody id="cheat-table-body"></tbody>
+        </table>
       </div>
     </div>
   </div>

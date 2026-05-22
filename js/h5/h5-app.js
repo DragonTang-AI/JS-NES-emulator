@@ -37,11 +37,28 @@ class H5App {
     this.menuCheats = document.getElementById("menu-cheats");
     this.menuCheatsArrow = document.getElementById("menu-cheats-arrow");
     this.menuCheatsSubpage = document.getElementById("menu-cheats-subpage");
-    this.cheatCode = document.getElementById("cheat-code");
-    this.cheatAddBtn = document.getElementById("cheat-add-btn");
-    this.cheatList = document.getElementById("menu-cheats-list");
-    this.cheatCodes = JSON.parse(localStorage.getItem("nes-cheat-codes") || "[]");
+    this.menuCheatsGameList = document.getElementById("menu-cheats-game-list");
+    this.cheatModal = document.getElementById("cheat-modal");
+    this.cheatModalClose = document.getElementById("cheat-modal-close");
+    this.cheatModalTitle = document.getElementById("cheat-modal-title");
+    this.cheatTableBody = document.getElementById("cheat-table-body");
     this.settingsBtn = document.getElementById("quick-settings-btn");
+
+    this.CHEAT_LIBRARY = [
+      {
+        game: "三目童子",
+        roms: ["MitsumeGaTooru.nes", "Mitsume ga Tooru (Japan).nes"],
+        cheats: [
+          { name: "无限命", desc: "游戏结束后不会减少生命次数", codes: [{ address: 0x007B, value: 0x09 }] },
+          { name: "血量无限", desc: "角色血量锁满，不会受伤", codes: [{ address: 0x007A, value: 0x06 }] },
+          { name: "闪烁无敌", desc: "开启后一段时间内敌人碰不到你", codes: [{ address: 0x0074, value: 0x55 }] },
+          { name: "金钱无限", desc: "购物时金钱不减反增", codes: [{ address: 0x007C, value: 0x0F }, { address: 0x007D, value: 0x27 }] },
+          { name: "所有武器", desc: "直接解锁全部枪械和道具", codes: [{ address: 0x0081, value: 0x5F }] },
+          { name: "随时放箭", desc: "按外挂开启键就能射箭，不用攒道具", codes: [{ address: 0x0527, value: 0x02 }] },
+        ]
+      }
+    ];
+    this.activeCheats = JSON.parse(localStorage.getItem("nes-active-cheats") || "[]");
     this.settingsModal = document.getElementById("settings-modal");
     this.settingsClose = document.getElementById("settings-close");
     this.authPromptModal = document.getElementById("auth-prompt-modal");
@@ -98,8 +115,8 @@ class H5App {
       this.saveManager.init();
       this.bindEvents();
       await this.restoreAuthSession();
-      if (this.emulator && this.cheatCodes.length > 0) {
-        this.emulator.setCheats(this.cheatCodes);
+      if (this.emulator && this.activeCheats.length > 0) {
+        this.emulator.setCheats(this.activeCheats);
       }
       if (!this.authUser && !this.authPromptDismissed) {
         setTimeout(() => {
@@ -304,16 +321,17 @@ class H5App {
       this.menuCheatsSubpage.hidden = isOpen;
       this.menuCheatsArrow.classList.toggle("open", !isOpen);
       this.slideRomList.hidden = true;
-      if (!isOpen) this._renderCheatList();
+      if (!isOpen) this._renderCheatGameList();
     });
 
-    if (this.cheatAddBtn) {
-      this.cheatAddBtn.addEventListener("click", () => this._addCheat());
+    if (this.cheatModalClose) {
+      this.cheatModalClose.addEventListener("click", () => {
+        this.cheatModal.hidden = true;
+      });
     }
-
-    if (this.cheatCode) {
-      this.cheatCode.addEventListener("keydown", (e) => {
-        if (e.key === "Enter") this._addCheat();
+    if (this.cheatModal) {
+      this.cheatModal.addEventListener("click", (e) => {
+        if (e.target === this.cheatModal) this.cheatModal.hidden = true;
       });
     }
 
@@ -739,92 +757,102 @@ class H5App {
     this.loadingOverlay.classList.add("hidden");
   }
 
-  _saveCheats() {
-    localStorage.setItem("nes-cheat-codes", JSON.stringify(this.cheatCodes));
+  _getActiveCheatCodes() {
+    const codes = [];
+    this.activeCheats.forEach((ac) => {
+      for (const lib of this.CHEAT_LIBRARY) {
+        if (lib.game === ac.game) {
+          for (const cheat of lib.cheats) {
+            if (cheat.name === ac.name && ac.enabled) {
+              codes.push(...cheat.codes);
+            }
+          }
+        }
+      }
+    });
+    return codes;
+  }
+
+  _syncCheats() {
+    localStorage.setItem("nes-active-cheats", JSON.stringify(this.activeCheats));
     if (this.emulator) {
-      this.emulator.setCheats(this.cheatCodes);
+      this.emulator.setCheats(this._getActiveCheatCodes());
     }
   }
 
-  _addCheat() {
-    const raw = (this.cheatCode.value || "").trim();
-    if (!raw) {
-      this.updateStatus("请输入外挂代码");
-      return;
-    }
-    const parts = raw.split(/[-:]/);
-    if (parts.length < 3) {
-      this.updateStatus("格式错误，正确格式：AAAA-XX-VV");
-      return;
-    }
-    const addrStr = parts[0].trim();
-    const valStr = parts[2].trim();
-    const address = parseInt(addrStr, 16);
-    const value = parseInt(valStr, 16);
-    if (isNaN(address) || address < 0 || address > 0xFFFF) {
-      this.updateStatus("地址格式错误，范围 0000-FFFF");
-      return;
-    }
-    if (isNaN(value) || value < 0 || value > 0xFF) {
-      this.updateStatus("值格式错误，范围 00-FF");
-      return;
-    }
-    const label = addrStr.toUpperCase() + "-" + parts[1].trim().toUpperCase() + "-" + valStr.toUpperCase();
-    this.cheatCodes.push({ address, value, enabled: true, label });
-    this._saveCheats();
-    this.cheatCode.value = "";
-    this._renderCheatList();
-    this.updateStatus("已添加外挂 " + label);
+  _renderCheatGameList() {
+    this.menuCheatsGameList.innerHTML = "";
+    this.CHEAT_LIBRARY.forEach((lib) => {
+      const item = document.createElement("div");
+      item.className = "cheat-game-item";
+
+      const icon = document.createElement("span");
+      icon.className = "cheat-game-icon";
+      icon.textContent = "🎮";
+
+      const name = document.createElement("span");
+      name.className = "cheat-game-name";
+      name.textContent = lib.game;
+
+      const arrow = document.createElement("span");
+      arrow.className = "cheat-game-arrow";
+      arrow.textContent = "›";
+
+      item.appendChild(icon);
+      item.appendChild(name);
+      item.appendChild(arrow);
+
+      item.addEventListener("click", () => this._openCheatModal(lib.game));
+      this.menuCheatsGameList.appendChild(item);
+    });
   }
 
-  _toggleCheat(index) {
-    if (index >= 0 && index < this.cheatCodes.length) {
-      this.cheatCodes[index].enabled = !this.cheatCodes[index].enabled;
-      this._saveCheats();
-      this._renderCheatList();
-    }
-  }
+  _openCheatModal(game) {
+    const lib = this.CHEAT_LIBRARY.find((l) => l.game === game);
+    if (!lib) return;
+    this.cheatModalTitle.textContent = game + " - 外挂";
+    this.cheatTableBody.innerHTML = "";
+    lib.cheats.forEach((cheat) => {
+      const active = this.activeCheats.find((ac) => ac.game === game && ac.name === cheat.name);
+      const enabled = active ? active.enabled : false;
 
-  _deleteCheat(index) {
-    if (index >= 0 && index < this.cheatCodes.length) {
-      this.cheatCodes.splice(index, 1);
-      this._saveCheats();
-      this._renderCheatList();
-    }
-  }
+      const tr = document.createElement("tr");
 
-  _renderCheatList() {
-    this.cheatList.innerHTML = "";
-    if (this.cheatCodes.length === 0) {
-      const empty = document.createElement("div");
-      empty.className = "cheat-empty";
-      empty.textContent = "暂无金手指";
-      this.cheatList.appendChild(empty);
-      return;
-    }
-    this.cheatCodes.forEach((cheat, index) => {
-      const row = document.createElement("div");
-      row.className = "cheat-row" + (cheat.enabled ? " cheat-enabled" : "");
+      const tdName = document.createElement("td");
+      tdName.className = "cheat-td-name";
+      tdName.textContent = cheat.name;
+
+      const tdDesc = document.createElement("td");
+      tdDesc.className = "cheat-td-desc";
+      tdDesc.textContent = cheat.desc;
+
+      const tdToggle = document.createElement("td");
+      tdToggle.className = "cheat-td-toggle";
 
       const toggle = document.createElement("button");
-      toggle.className = "cheat-toggle";
-      toggle.textContent = cheat.enabled ? "ON" : "OFF";
-      toggle.addEventListener("click", () => this._toggleCheat(index));
+      toggle.className = "cheat-toggle" + (enabled ? " cheat-toggle-on" : "");
+      toggle.textContent = enabled ? "ON" : "OFF";
+      toggle.addEventListener("click", () => {
+        const idx = this.activeCheats.findIndex((ac) => ac.game === game && ac.name === cheat.name);
+        if (idx >= 0) {
+          this.activeCheats[idx].enabled = !this.activeCheats[idx].enabled;
+          if (this.activeCheats[idx].enabled === false) {
+            this.activeCheats.splice(idx, 1);
+          }
+        } else {
+          this.activeCheats.push({ game, name: cheat.name, enabled: true });
+        }
+        this._syncCheats();
+        this._openCheatModal(game);
+      });
+      tdToggle.appendChild(toggle);
 
-      const label = document.createElement("span");
-      label.className = "cheat-label";
-      label.textContent = cheat.label || (cheat.address.toString(16).toUpperCase() + ":" + cheat.value.toString(16).toUpperCase());
-
-      const del = document.createElement("button");
-      del.className = "cheat-del";
-      del.textContent = "×";
-      del.addEventListener("click", () => this._deleteCheat(index));
-
-      row.appendChild(toggle);
-      row.appendChild(label);
-      row.appendChild(del);
-      this.cheatList.appendChild(row);
+      tr.appendChild(tdName);
+      tr.appendChild(tdDesc);
+      tr.appendChild(tdToggle);
+      this.cheatTableBody.appendChild(tr);
     });
+    this.cheatModal.hidden = false;
   }
 }
 
