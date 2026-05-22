@@ -733,6 +733,7 @@ body {
 
   #nes-container {
     padding: 0;
+    margin-top: -10px;
   }
 
   .joystick-zone {
