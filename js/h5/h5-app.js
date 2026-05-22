@@ -34,6 +34,14 @@ class H5App {
     this.menuUpload = document.getElementById("menu-upload");
     this.menuLibrary = document.getElementById("menu-library");
     this.menuFavorites = document.getElementById("menu-favorites");
+    this.menuCheats = document.getElementById("menu-cheats");
+    this.menuCheatsArrow = document.getElementById("menu-cheats-arrow");
+    this.menuCheatsSubpage = document.getElementById("menu-cheats-subpage");
+    this.cheatAddress = document.getElementById("cheat-address");
+    this.cheatValue = document.getElementById("cheat-value");
+    this.cheatAddBtn = document.getElementById("cheat-add-btn");
+    this.cheatList = document.getElementById("menu-cheats-list");
+    this.cheatCodes = JSON.parse(localStorage.getItem("nes-cheat-codes") || "[]");
     this.settingsBtn = document.getElementById("quick-settings-btn");
     this.settingsModal = document.getElementById("settings-modal");
     this.settingsClose = document.getElementById("settings-close");
@@ -91,6 +99,9 @@ class H5App {
       this.saveManager.init();
       this.bindEvents();
       await this.restoreAuthSession();
+      if (this.emulator && this.cheatCodes.length > 0) {
+        this.emulator.setCheats(this.cheatCodes);
+      }
       if (!this.authUser && !this.authPromptDismissed) {
         setTimeout(() => {
           this.authPromptModal.hidden = false;
@@ -289,6 +300,30 @@ class H5App {
       this.refreshRomList();
     });
 
+    this.menuCheats.addEventListener("click", () => {
+      const isOpen = !this.menuCheatsSubpage.hidden;
+      this.menuCheatsSubpage.hidden = isOpen;
+      this.menuCheatsArrow.classList.toggle("open", !isOpen);
+      this.slideRomList.hidden = true;
+      if (!isOpen) this._renderCheatList();
+    });
+
+    if (this.cheatAddBtn) {
+      this.cheatAddBtn.addEventListener("click", () => this._addCheat());
+    }
+
+    if (this.cheatAddress) {
+      this.cheatAddress.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") this._addCheat();
+      });
+    }
+
+    if (this.cheatValue) {
+      this.cheatValue.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") this._addCheat();
+      });
+    }
+
     document.getElementById("btn-save").addEventListener("click", () => {
       if (this.emulator.getCurrentRom()) {
         this.saveManager.open();
@@ -419,6 +454,8 @@ class H5App {
     this.slideMenu.hidden = false;
     this.menuAccountSubpage.hidden = true;
     this.menuAccountArrow.classList.remove("open");
+    this.menuCheatsSubpage.hidden = true;
+    this.menuCheatsArrow.classList.remove("open");
     this.slideRomList.hidden = true;
   }
 
@@ -707,6 +744,88 @@ class H5App {
     console.error(e);
     this.updateStatus("Error: " + e.message);
     this.loadingOverlay.classList.add("hidden");
+  }
+
+  _saveCheats() {
+    localStorage.setItem("nes-cheat-codes", JSON.stringify(this.cheatCodes));
+    if (this.emulator) {
+      this.emulator.setCheats(this.cheatCodes);
+    }
+  }
+
+  _addCheat() {
+    const addrStr = (this.cheatAddress.value || "").trim().replace(/^0x/i, "");
+    const valStr = (this.cheatValue.value || "").trim().replace(/^0x/i, "");
+    if (!addrStr || !valStr) {
+      this.updateStatus("请输入地址和值");
+      return;
+    }
+    const address = parseInt(addrStr, 16);
+    const value = parseInt(valStr, 16);
+    if (isNaN(address) || address < 0 || address > 0xFFFF) {
+      this.updateStatus("地址格式错误，范围 0000-FFFF");
+      return;
+    }
+    if (isNaN(value) || value < 0 || value > 0xFF) {
+      this.updateStatus("值格式错误，范围 00-FF");
+      return;
+    }
+    this.cheatCodes.push({ address, value, enabled: true, label: addrStr.toUpperCase() + ":" + valStr.toUpperCase() });
+    this._saveCheats();
+    this.cheatAddress.value = "";
+    this.cheatValue.value = "";
+    this._renderCheatList();
+    this.updateStatus("已添加金手指 " + addrStr.toUpperCase() + ":" + valStr.toUpperCase());
+  }
+
+  _toggleCheat(index) {
+    if (index >= 0 && index < this.cheatCodes.length) {
+      this.cheatCodes[index].enabled = !this.cheatCodes[index].enabled;
+      this._saveCheats();
+      this._renderCheatList();
+    }
+  }
+
+  _deleteCheat(index) {
+    if (index >= 0 && index < this.cheatCodes.length) {
+      this.cheatCodes.splice(index, 1);
+      this._saveCheats();
+      this._renderCheatList();
+    }
+  }
+
+  _renderCheatList() {
+    this.cheatList.innerHTML = "";
+    if (this.cheatCodes.length === 0) {
+      const empty = document.createElement("div");
+      empty.className = "cheat-empty";
+      empty.textContent = "暂无金手指";
+      this.cheatList.appendChild(empty);
+      return;
+    }
+    this.cheatCodes.forEach((cheat, index) => {
+      const row = document.createElement("div");
+      row.className = "cheat-row" + (cheat.enabled ? " cheat-enabled" : "");
+
+      const toggle = document.createElement("button");
+      toggle.className = "cheat-toggle";
+      toggle.textContent = cheat.enabled ? "ON" : "OFF";
+      toggle.addEventListener("click", () => this._toggleCheat(index));
+
+      const label = document.createElement("span");
+      label.className = "cheat-label";
+      label.textContent = cheat.label || (cheat.address.toString(16).toUpperCase() + ":" + cheat.value.toString(16).toUpperCase());
+
+      const del = document.createElement("button");
+      del.className = "cheat-del";
+      del.textContent = "×";
+      del.addEventListener("click", () => this._deleteCheat(index));
+
+      row.appendChild(toggle);
+      row.appendChild(label);
+      row.appendChild(del);
+      this.cheatList.appendChild(row);
+    });
   }
 }
 

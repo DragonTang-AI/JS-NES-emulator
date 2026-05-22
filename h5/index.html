@@ -89,6 +89,22 @@
           <span class="menu-item-icon">⭐</span>
           <span class="menu-item-label">收藏</span>
         </div>
+        <div class="menu-item" id="menu-cheats">
+          <span class="menu-item-icon">⚡</span>
+          <span class="menu-item-label">金手指</span>
+          <span class="menu-item-arrow" id="menu-cheats-arrow">›</span>
+        </div>
+        <div class="menu-subpage" id="menu-cheats-subpage" hidden>
+          <div class="menu-cheats-header">金手指（每帧自动写入）</div>
+          <div class="menu-cheats-hint">格式：地址(HEX):值(HEX)，如 005E:09</div>
+          <div class="menu-cheats-input-row">
+            <input id="cheat-address" type="text" maxlength="6" placeholder="地址" class="cheat-hex-input">
+            <span class="cheat-colon">:</span>
+            <input id="cheat-value" type="text" maxlength="4" placeholder="值" class="cheat-hex-input cheat-value-input">
+            <button id="cheat-add-btn" class="cheat-add-btn">+</button>
+          </div>
+          <div class="menu-cheats-list" id="menu-cheats-list"></div>
+        </div>
         <div class="menu-rom-list" id="slide-rom-list" hidden></div>
       </div>
       <div class="slide-menu-status" id="slide-menu-status"></div>

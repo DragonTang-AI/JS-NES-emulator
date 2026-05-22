@@ -300,6 +300,23 @@ class Emulator {
     req.send();
   }
 
+  _cheats = [];
+
+  setCheats(cheats) {
+    this._cheats = (cheats || []).filter(c => c.enabled);
+  }
+
+  _applyCheats() {
+    for (let i = 0; i < this._cheats.length; i++) {
+      const c = this._cheats[i];
+      if (c.address !== undefined && c.value !== undefined && this.nes && this.nes.cpu) {
+        try {
+          this.nes.cpu.write(c.address, c.value);
+        } catch (e) { /* ignore write errors */ }
+      }
+    }
+  }
+
   _startLoop() {
     if (this.running) return;
     this.running = true;
@@ -307,6 +324,7 @@ class Emulator {
       if (!this.running) return;
       try {
         this.nes.frame();
+        this._applyCheats();
       } catch (e) {
         console.error("Emulation error:", e);
         this.onError(e);
