@@ -904,7 +904,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 2000;
+  z-index: 3500;
   -webkit-touch-callout: none;
   -webkit-user-select: none;
   user-select: none;
