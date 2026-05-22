@@ -52,12 +52,12 @@ class SaveManager {
     });
   }
 
-  _setSyncStatus(text, isError) {
+  _setSyncStatus(text, isError, isLoading) {
     const el = document.getElementById("save-sync-status");
     if (!el) return;
     el.textContent = text;
     el.style.display = text ? "block" : "none";
-    el.className = "save-sync-status" + (isError ? " sync-error" : " sync-ok");
+    el.className = "save-sync-status" + (isError ? " sync-error" : " sync-ok") + (isLoading ? " sync-loading" : "");
   }
 
   async _doSync() {
@@ -185,7 +185,9 @@ class SaveManager {
       loadBtn.disabled = !save.exists;
       loadBtn.addEventListener("click", async () => {
         loadBtn.disabled = true;
+        this._setSyncStatus("正在读取存档 " + save.slot + " ...", false, true);
         const r = await this.emulator.loadState(save.slot);
+        this._setSyncStatus("", false);
         loadBtn.disabled = false;
         if (r && r.ok) {
           this.close();
