@@ -37,8 +37,7 @@ class H5App {
     this.menuCheats = document.getElementById("menu-cheats");
     this.menuCheatsArrow = document.getElementById("menu-cheats-arrow");
     this.menuCheatsSubpage = document.getElementById("menu-cheats-subpage");
-    this.cheatAddress = document.getElementById("cheat-address");
-    this.cheatValue = document.getElementById("cheat-value");
+    this.cheatCode = document.getElementById("cheat-code");
     this.cheatAddBtn = document.getElementById("cheat-add-btn");
     this.cheatList = document.getElementById("menu-cheats-list");
     this.cheatCodes = JSON.parse(localStorage.getItem("nes-cheat-codes") || "[]");
@@ -312,14 +311,8 @@ class H5App {
       this.cheatAddBtn.addEventListener("click", () => this._addCheat());
     }
 
-    if (this.cheatAddress) {
-      this.cheatAddress.addEventListener("keydown", (e) => {
-        if (e.key === "Enter") this._addCheat();
-      });
-    }
-
-    if (this.cheatValue) {
-      this.cheatValue.addEventListener("keydown", (e) => {
+    if (this.cheatCode) {
+      this.cheatCode.addEventListener("keydown", (e) => {
         if (e.key === "Enter") this._addCheat();
       });
     }
@@ -754,12 +747,18 @@ class H5App {
   }
 
   _addCheat() {
-    const addrStr = (this.cheatAddress.value || "").trim().replace(/^0x/i, "");
-    const valStr = (this.cheatValue.value || "").trim().replace(/^0x/i, "");
-    if (!addrStr || !valStr) {
-      this.updateStatus("请输入地址和值");
+    const raw = (this.cheatCode.value || "").trim();
+    if (!raw) {
+      this.updateStatus("请输入外挂代码");
       return;
     }
+    const parts = raw.split(/[-:]/);
+    if (parts.length < 3) {
+      this.updateStatus("格式错误，正确格式：AAAA-XX-VV");
+      return;
+    }
+    const addrStr = parts[0].trim();
+    const valStr = parts[2].trim();
     const address = parseInt(addrStr, 16);
     const value = parseInt(valStr, 16);
     if (isNaN(address) || address < 0 || address > 0xFFFF) {
@@ -770,12 +769,12 @@ class H5App {
       this.updateStatus("值格式错误，范围 00-FF");
       return;
     }
-    this.cheatCodes.push({ address, value, enabled: true, label: addrStr.toUpperCase() + ":" + valStr.toUpperCase() });
+    const label = addrStr.toUpperCase() + "-" + parts[1].trim().toUpperCase() + "-" + valStr.toUpperCase();
+    this.cheatCodes.push({ address, value, enabled: true, label });
     this._saveCheats();
-    this.cheatAddress.value = "";
-    this.cheatValue.value = "";
+    this.cheatCode.value = "";
     this._renderCheatList();
-    this.updateStatus("已添加金手指 " + addrStr.toUpperCase() + ":" + valStr.toUpperCase());
+    this.updateStatus("已添加外挂 " + label);
   }
 
   _toggleCheat(index) {

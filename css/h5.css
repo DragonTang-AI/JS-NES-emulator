@@ -877,7 +877,7 @@ body {
   padding: 0 15px 8px;
 }
 
-.cheat-hex-input {
+.cheat-code-input {
   flex: 1;
   background: var(--bg-color);
   border: 1px solid var(--border-color);
@@ -890,18 +890,8 @@ body {
   min-width: 0;
 }
 
-.cheat-hex-input:focus {
+.cheat-code-input:focus {
   border-color: var(--accent-color);
-}
-
-.cheat-value-input {
-  flex: 0.5;
-}
-
-.cheat-colon {
-  color: var(--text-color);
-  font-weight: bold;
-  font-size: 14px;
 }
 
 .cheat-add-btn {
