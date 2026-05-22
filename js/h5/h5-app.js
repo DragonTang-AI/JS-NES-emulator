@@ -50,7 +50,6 @@ class H5App {
         roms: ["MitsumeGaTooru.nes", "Mitsume ga Tooru (Japan).nes"],
         cheats: [
           { name: "无限命", desc: "游戏结束后不会减少生命次数", codes: [{ address: 0x007B, value: 0x09 }] },
-          { name: "血量无限", desc: "角色血量锁满，不会受伤", codes: [{ address: 0x007A, value: 0x06 }] },
         ]
       }
     ];
