@@ -1,4 +1,4 @@
-const CACHE = 'nes-cache-v3';
+const CACHE = 'nes-cache-v4';
 
 const PRECACHE_URLS = [
   '/',

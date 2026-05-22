@@ -4,6 +4,14 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>NES 模拟器</title>
+<script>
+(function() {
+  var isMobile = /Mobi|Android|iPhone|iPad|iPod|webOS|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+  if (isMobile || window.innerWidth < 768) {
+    window.location.replace("/h5/");
+  }
+})();
+</script>
   <link rel="manifest" href="/manifest.json">
   <link rel="stylesheet" href="css/common.css">
   <link rel="stylesheet" href="css/pc.css">
