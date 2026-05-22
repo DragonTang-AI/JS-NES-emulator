@@ -1,0 +1,109 @@
+.pc-header {
+  text-align: center;
+  padding: 20px;
+  position: relative;
+}
+
+.pc-header h1 {
+  font-size: 24px;
+  color: var(--accent-color);
+  margin-bottom: 8px;
+}
+
+.pc-header p {
+  font-size: 14px;
+  color: #888;
+}
+
+.header-nav {
+  margin-top: 10px;
+}
+
+.nav-link {
+  color: var(--accent-color);
+  text-decoration: none;
+  font-size: 14px;
+  padding: 6px 16px;
+  border: 1px solid var(--accent-color);
+  border-radius: 4px;
+  transition: all 0.2s;
+}
+
+.nav-link:hover {
+  background: var(--accent-color);
+  color: #fff;
+}
+
+.keyboard-hint {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  flex-wrap: wrap;
+  padding: 10px;
+  font-size: 12px;
+  color: #888;
+}
+
+.key {
+  display: inline-block;
+  background: var(--secondary-color);
+  border: 1px solid var(--border-color);
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-size: 11px;
+  color: var(--text-color);
+}
+
+#rom-list {
+  margin-top: 10px;
+}
+
+/* Danmaku / Marquee */
+.danmaku-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+  overflow: hidden;
+  z-index: 999;
+}
+
+.danmaku-text {
+  position: absolute;
+  white-space: nowrap;
+  font-size: 18px;
+  color: rgba(255, 255, 255, 0.25);
+  font-family: "Microsoft YaHei", "PingFang SC", sans-serif;
+  font-weight: bold;
+  text-shadow: 0 0 4px rgba(233, 69, 96, 0.3);
+  animation: danmaku-scroll 10s linear infinite;
+}
+
+.danmaku-1 {
+  top: 15%;
+  animation-delay: 0s;
+  animation-duration: 12s;
+}
+
+.danmaku-2 {
+  top: 45%;
+  animation-delay: -4s;
+  animation-duration: 14s;
+}
+
+.danmaku-3 {
+  top: 75%;
+  animation-delay: -8s;
+  animation-duration: 11s;
+}
+
+@keyframes danmaku-scroll {
+  from {
+    transform: translateX(100vw);
+  }
+  to {
+    transform: translateX(-100%);
+  }
+}

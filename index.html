@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NES 模拟器</title>
+  <link rel="manifest" href="/manifest.json">
+  <link rel="stylesheet" href="css/common.css">
+  <link rel="stylesheet" href="css/pc.css">
+</head>
+<body>
+  <div id="loading-overlay" class="hidden">
+    <div class="loading-logo">
+      <span>N</span><span>E</span><span>S</span>
+    </div>
+    <div class="loading-bar-container">
+      <div class="loading-bar" id="loading-bar"></div>
+    </div>
+    <div class="loading-text" id="loading-text">Loading...</div>
+  </div>
+
+  <div class="danmaku-container">
+    <div class="danmaku-text danmaku-1">欢迎青云姐姐来体验游玩</div>
+    <div class="danmaku-text danmaku-2">欢迎青云姐姐来体验游玩</div>
+    <div class="danmaku-text danmaku-3">欢迎青云姐姐来体验游玩</div>
+  </div>
+
+  <div class="pc-header">
+    <h1>NES 经典游戏模拟器</h1>
+    <p>上传 .nes ROM 文件开始游戏</p>
+    <div class="header-nav">
+      <a href="/library/" class="nav-link">游戏库</a>
+    </div>
+  </div>
+
+  <div id="nes-container"></div>
+
+  <div class="controls">
+    <button id="upload-btn">上传 ROM</button>
+    <button id="fullscreen-btn">全屏 F</button>
+    <input type="file" id="rom-upload" accept=".nes">
+  </div>
+
+  <div class="controls">
+    <button id="save-btn">存档管理</button>
+    <button id="screenshot-btn">截图</button>
+  </div>
+
+  <div class="rom-filters">
+    <button id="filter-all" class="filter-btn active">全部</button>
+    <button id="filter-favorites" class="filter-btn">收藏</button>
+  </div>
+
+  <div id="rom-list" class="rom-list"></div>
+
+  <div class="keyboard-hint">
+    <span><span class="key">方向键</span> 移动</span>
+    <span><span class="key">X</span> A按钮</span>
+    <span><span class="key">Z</span> B按钮</span>
+    <span><span class="key">Enter</span> 开始</span>
+    <span><span class="key">右Ctrl</span> 选择</span>
+    <span><span class="key">F</span> 全屏</span>
+  </div>
+
+  <div id="status" class="status">初始化中...</div>
+
+  <script src="js/core/emulator.js"></script>
+  <script src="js/core/rom-manager.js"></script>
+  <script src="js/core/save-manager.js"></script>
+  <script src="js/pc/pc-app.js"></script>
+<script>
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/sw.js').catch(function(e) {
+    console.warn('SW registration failed:', e);
+  });
+}
+</script>
+</body>
+</html>

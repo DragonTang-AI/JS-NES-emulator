@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="theme-color" content="#1a1a2e">
+  <title>NES 模拟器</title>
+  <link rel="manifest" href="/manifest.json">
+  <link rel="stylesheet" href="../css/common.css">
+  <link rel="stylesheet" href="../css/h5.css">
+</head>
+<body>
+  <div id="loading-overlay" class="hidden">
+    <div class="loading-logo">
+      <span>N</span><span>E</span><span>S</span>
+    </div>
+    <div class="loading-bar-container">
+      <div class="loading-bar" id="loading-bar"></div>
+    </div>
+    <div class="loading-text" id="loading-text">Loading...</div>
+  </div>
+
+  <button id="menu-toggle" class="menu-toggle">☰</button>
+  <button id="quick-settings-btn" class="quick-settings-toggle" aria-label="打开设置">⚙</button>
+
+  <div id="nes-container"></div>
+
+  <div id="virtual-gamepad" hidden>
+    <div id="joystick-zone" class="joystick-zone"></div>
+    <div id="joystick-base" class="joystick-base"></div>
+    <div id="joystick-knob" class="joystick-knob"></div>
+    <div id="joystick-hint" class="joystick-hint">左侧任意滑动控制方向</div>
+    <div id="gamepad-gradient" class="gamepad-gradient"></div>
+
+    <div class="action-buttons">
+      <div class="action-btn btn-b" id="btn-b">B</div>
+      <div class="action-btn btn-a" id="btn-a">A</div>
+    </div>
+
+    <div class="meta-buttons">
+      <div class="meta-btn sv-btn" id="btn-save">存</div>
+      <div class="meta-btn" id="btn-select">SELECT</div>
+      <div class="meta-btn" id="btn-start">START</div>
+      <div class="meta-btn ld-btn" id="btn-load">读</div>
+    </div>
+  </div>
+
+  <div id="slide-menu" hidden>
+    <div class="slide-menu-backdrop" id="slide-menu-backdrop"></div>
+    <div class="slide-menu-panel">
+      <div class="slide-menu-header">
+        <span>菜单</span>
+        <button id="slide-menu-close">✕</button>
+      </div>
+      <div class="slide-menu-body">
+        <div class="menu-item" id="menu-account">
+          <span class="menu-item-icon">👤</span>
+          <span class="menu-item-label" id="menu-account-label">未登录</span>
+          <span class="menu-item-arrow" id="menu-account-arrow">›</span>
+        </div>
+        <div class="menu-subpage" id="menu-account-subpage" hidden>
+          <div class="menu-auth-form" id="menu-auth-form">
+            <input id="auth-username" type="text" maxlength="24" placeholder="账号（3-24位）" autocomplete="username">
+            <input id="auth-password" type="password" maxlength="64" placeholder="密码（至少6位）" autocomplete="current-password">
+            <div class="menu-auth-actions">
+              <button id="auth-login-btn" type="button">登录</button>
+              <button id="auth-register-btn" type="button">注册</button>
+            </div>
+          </div>
+          <div class="menu-auth-info" id="menu-auth-info" hidden>
+            <div class="menu-auth-user" id="menu-auth-user"></div>
+            <div class="menu-auth-actions">
+              <button id="auth-logout-btn" type="button">退出登录</button>
+              <button id="auth-sync-btn" type="button">↻ 同步云存档</button>
+            </div>
+          </div>
+        </div>
+        <div class="menu-item" id="menu-upload">
+          <span class="menu-item-icon">📁</span>
+          <span class="menu-item-label">上传 ROM</span>
+        </div>
+        <div class="menu-item" id="menu-library">
+          <span class="menu-item-icon">📚</span>
+          <span class="menu-item-label">游戏库</span>
+        </div>
+        <div class="menu-item" id="menu-favorites">
+          <span class="menu-item-icon">⭐</span>
+          <span class="menu-item-label">收藏</span>
+        </div>
+        <div class="menu-rom-list" id="slide-rom-list" hidden></div>
+      </div>
+      <div class="slide-menu-status" id="slide-menu-status"></div>
+    </div>
+  </div>
+
+  <input type="file" id="rom-upload" accept=".nes" hidden>
+
+  <div id="settings-modal" class="settings-modal" hidden>
+    <div class="settings-card">
+      <div class="settings-header">
+        <span>游戏设置</span>
+        <button id="settings-close" class="settings-close">×</button>
+      </div>
+
+      <div class="settings-row">
+        <label for="setting-music">音乐开关</label>
+        <input id="setting-music" type="checkbox">
+      </div>
+
+      <div class="settings-row settings-row-volume">
+        <label for="setting-volume">音量</label>
+        <input id="setting-volume" type="range" min="0" max="100" step="1">
+        <span id="setting-volume-value">80%</span>
+      </div>
+
+      <div class="settings-row">
+        <label for="setting-joystick-mode">摇杆模式</label>
+        <select id="setting-joystick-mode">
+          <option value="floating">浮动摇杆</option>
+          <option value="fixed">固定摇杆</option>
+        </select>
+      </div>
+
+      <div class="settings-row">
+        <label for="setting-vibration">按键震动</label>
+        <input id="setting-vibration" type="checkbox">
+      </div>
+
+      <div class="settings-row">
+        <label for="setting-show-hint">摇杆提示</label>
+        <input id="setting-show-hint" type="checkbox">
+      </div>
+    </div>
+  </div>
+
+  <div id="auth-prompt-modal" class="auth-prompt-modal" hidden>
+    <div class="auth-prompt-card">
+      <button id="auth-prompt-close" class="auth-prompt-close">×</button>
+      <div class="auth-prompt-title">登录后可永久云存档</div>
+      <div class="auth-prompt-desc">游客模式可直接游玩，但清缓存/换设备后存档会丢失。</div>
+      <div class="auth-prompt-actions">
+        <button id="auth-prompt-login" type="button">去登录</button>
+        <button id="auth-prompt-guest" type="button">游客模式继续</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="../js/core/emulator.js"></script>
+  <script src="../js/core/rom-manager.js"></script>
+  <script src="../js/core/save-manager.js"></script>
+  <script src="../js/h5/virtual-gamepad.js"></script>
+  <script src="../js/h5/h5-app.js"></script>
+<script>
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/sw.js').catch(function(e) {
+    console.warn('SW registration failed:', e);
+  });
+}
+</script>
+</body>
+</html>

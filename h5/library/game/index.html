@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>游戏详情 - NES 模拟器</title>
+  <link rel="manifest" href="/manifest.json">
+  <link rel="stylesheet" href="../../../css/common.css">
+  <link rel="stylesheet" href="../../../css/game.css">
+</head>
+<body>
+  <div id="loading-overlay" class="hidden">
+    <div class="loading-logo">
+      <span>N</span><span>E</span><span>S</span>
+    </div>
+    <div class="loading-bar-container">
+      <div class="loading-bar" id="loading-bar"></div>
+    </div>
+    <div class="loading-text" id="loading-text">Loading...</div>
+  </div>
+
+  <div class="game-detail" id="game-detail">
+    <a href="../" class="game-back">← 返回游戏库</a>
+
+    <div class="game-header">
+      <div class="game-cover-large" id="game-cover">
+        <div class="placeholder">🎮</div>
+      </div>
+
+      <div class="game-info">
+        <h1 id="game-title">Loading...</h1>
+        <div class="game-meta">
+          <span class="game-category" id="game-category">-</span>
+          <button class="game-fav-btn" id="game-fav-btn">☆ 收藏</button>
+        </div>
+        <p class="game-description" id="game-description">-</p>
+        <div class="game-stats" id="game-stats"></div>
+        <div class="game-actions">
+          <button class="btn-play" id="btn-play">开始游戏</button>
+          <button class="btn-delete" id="btn-delete" style="display:none;">删除 ROM</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="game-section">
+      <h2>操作说明</h2>
+      <div class="controls-grid">
+        <div class="control-item"><span class="control-key">↑↓←→</span> 方向键</div>
+        <div class="control-item"><span class="control-key">X</span> A 按钮</div>
+        <div class="control-item"><span class="control-key">Z</span> B 按钮</div>
+        <div class="control-item"><span class="control-key">Enter</span> 开始</div>
+        <div class="control-item"><span class="control-key">右Ctrl</span> 选择</div>
+        <div class="control-item"><span class="control-key">F</span> 全屏</div>
+      </div>
+    </div>
+
+    <div class="game-section">
+      <h2>存档信息</h2>
+      <div id="save-info">加载中...</div>
+    </div>
+  </div>
+
+  <script src="../../../js/core/rom-manager.js"></script>
+  <script src="../../../library/game/js/game-detail.js"></script>
+<script>
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/sw.js').catch(function(e) {
+    console.warn('SW registration failed:', e);
+  });
+}
+</script>
+</body>
+</html>

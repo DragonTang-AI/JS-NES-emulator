@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>游戏库 - NES 模拟器</title>
+  <link rel="manifest" href="/manifest.json">
+  <link rel="stylesheet" href="../../css/common.css">
+  <link rel="stylesheet" href="../../css/library.css">
+</head>
+<body>
+  <div id="loading-overlay" class="hidden">
+    <div class="loading-logo">
+      <span>N</span><span>E</span><span>S</span>
+    </div>
+    <div class="loading-bar-container">
+      <div class="loading-bar" id="loading-bar"></div>
+    </div>
+    <div class="loading-text" id="loading-text">Loading...</div>
+  </div>
+
+  <div class="library-header">
+    <h1>游戏库</h1>
+    <div class="library-nav">
+      <div class="search-box">
+        <input type="text" id="search-input" placeholder="搜索游戏...">
+      </div>
+      <a href="/h5/" class="nav-link" id="library-back-link">返回H5</a>
+    </div>
+  </div>
+
+  <div class="library-filters" id="category-filters">
+    <button class="category-btn active" data-category="all">全部</button>
+    <button class="category-btn" data-category="action">动作</button>
+    <button class="category-btn" data-category="adventure">冒险</button>
+    <button class="category-btn" data-category="rpg">RPG</button>
+    <button class="category-btn" data-category="sports">体育</button>
+    <button class="category-btn" data-category="puzzle">益智</button>
+    <button class="category-btn" data-category="favorites">收藏</button>
+  </div>
+
+  <div class="library-stats" id="library-stats"></div>
+  <div class="library-grid" id="library-grid"></div>
+
+  <script src="../../js/core/rom-manager.js"></script>
+  <script src="../../js/library/library-app.js"></script>
+<script>
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/sw.js').catch(function(e) {
+    console.warn('SW registration failed:', e);
+  });
+}
+</script>
+</body>
+</html>
