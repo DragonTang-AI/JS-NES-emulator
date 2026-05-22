@@ -6,7 +6,7 @@ const bcrypt = require("bcryptjs");
 const Database = require("better-sqlite3");
 
 const app = express();
-app.use(express.json({ limit: "6mb" }));
+app.use(express.json({ limit: "20mb" }));
 
 const PORT = process.env.PORT || 3030;
 const JWT_SECRET = process.env.JWT_SECRET || "change-this-nes-secret";
