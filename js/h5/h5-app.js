@@ -22,8 +22,15 @@ class H5App {
     this.slideMenu = document.getElementById("slide-menu");
     this.slideMenuBackdrop = document.getElementById("slide-menu-backdrop");
     this.slideMenuClose = document.getElementById("slide-menu-close");
-    this.slideRomList = document.getElementById("slide-rom-list");
     this.slideStatus = document.getElementById("slide-menu-status");
+    this.libraryModal = document.getElementById("library-modal");
+    this.libraryModalBody = document.getElementById("library-modal-body");
+    this.libraryModalTitle = document.getElementById("library-modal-title");
+    this.libraryModalClose = document.getElementById("library-modal-close");
+    this.orientationToast = document.getElementById("orientation-toast");
+    this.orientationToastClose = document.getElementById("orientation-toast-close");
+    this._orientationToastTimer = null;
+    this._orientationToastDismissed = false;
     this.menuAccount = document.getElementById("menu-account");
     this.menuAccountLabel = document.getElementById("menu-account-label");
     this.menuAccountSubpage = document.getElementById("menu-account-subpage");
@@ -53,6 +60,7 @@ class H5App {
       { name: "Mitsume ga Tooru (Japan).nes", url: "/roms/Mitsume ga Tooru (Japan).nes", label: "三目通 (日版)" },
       { name: "2010 Street Fighter (Japan) (Beta).nes", url: "/roms/2010 Street Fighter (Japan) (Beta).nes", label: "2010 街头霸王" },
       { name: "Colour 2001 Streetfighter II (Asia) (En) (Pirate).nes", url: "/roms/Colour 2001 Streetfighter II (Asia) (En) (Pirate).nes", label: "2001 街头霸王II" },
+      { name: "Contra (USA).nes", url: "/roms/Contra (USA).nes", label: "魂斗罗" },
       { name: "Crystalis (USA, Europe) (SNK 40th Anniversary Collection).nes", url: "/roms/Crystalis (USA, Europe) (SNK 40th Anniversary Collection).nes", label: "水晶之剑" },
     ];
     this.authUI = new AuthUI(this);
@@ -166,11 +174,31 @@ class H5App {
     if (isLandscape) {
       document.body.classList.add("landscape");
       document.body.classList.remove("portrait");
+      this._hideOrientationToast();
     } else {
       document.body.classList.add("portrait");
       document.body.classList.remove("landscape");
+      this._showOrientationToast();
     }
     this.emulator.fitInParent();
+  }
+
+  _showOrientationToast() {
+    if (this._orientationToastDismissed) return;
+    if (!this.orientationToast) return;
+    if (this._orientationToastTimer) clearTimeout(this._orientationToastTimer);
+    this.orientationToast.hidden = false;
+    this._orientationToastTimer = setTimeout(() => {
+      this._hideOrientationToast();
+    }, 5000);
+  }
+
+  _hideOrientationToast() {
+    if (this._orientationToastTimer) {
+      clearTimeout(this._orientationToastTimer);
+      this._orientationToastTimer = null;
+    }
+    if (this.orientationToast) this.orientationToast.hidden = true;
   }
 
   bindEvents() {
@@ -207,17 +235,13 @@ class H5App {
     });
 
     this.menuLibrary.addEventListener("click", () => {
-      this.currentFilter = "all";
-      this.menuLibrary.classList.add("active");
-      this.menuFavorites.classList.remove("active");
-      this.refreshRomList();
+      this.closeMenu();
+      this.openLibraryModal("all");
     });
 
     this.menuFavorites.addEventListener("click", () => {
-      this.currentFilter = "favorites";
-      this.menuFavorites.classList.add("active");
-      this.menuLibrary.classList.remove("active");
-      this.refreshRomList();
+      this.closeMenu();
+      this.openLibraryModal("favorites");
     });
 
     document.getElementById("btn-save").addEventListener("click", () => {
@@ -253,10 +277,47 @@ class H5App {
       this.fileInput.value = "";
     });
 
+    if (this.libraryModalClose) {
+      this.libraryModalClose.addEventListener("click", () => this.closeLibraryModal());
+    }
+    if (this.libraryModal) {
+      this.libraryModal.addEventListener("click", (e) => {
+        if (e.target === this.libraryModal) this.closeLibraryModal();
+      });
+
+      this.libraryModal.querySelectorAll(".pixel-tab").forEach(tab => {
+        tab.addEventListener("click", () => {
+          const filter = tab.dataset.filter;
+          this.currentFilter = filter;
+          if (this.libraryModalTitle) {
+            this.libraryModalTitle.textContent = filter === "favorites" ? "收藏" : "游戏库";
+          }
+          const tabs = this.libraryModal.querySelectorAll(".pixel-tab");
+          tabs.forEach(t => t.classList.remove("active"));
+          tab.classList.add("active");
+          this.refreshRomList(filter);
+        });
+      });
+    }
+
+    if (this.orientationToastClose) {
+      this.orientationToastClose.addEventListener("click", () => {
+        this._orientationToastDismissed = true;
+        this._hideOrientationToast();
+      });
+    }
+
     const fullscreenBtn = document.getElementById("fullscreen-btn");
     if (fullscreenBtn) {
       fullscreenBtn.addEventListener("click", () => {
         this.emulator.toggleFullscreen();
+      });
+    }
+
+    const screenshotBtn = document.getElementById("screenshot-btn");
+    if (screenshotBtn) {
+      screenshotBtn.addEventListener("click", () => {
+        this._takeScreenshot();
       });
     }
 
@@ -299,8 +360,6 @@ class H5App {
     this.slideMenu.hidden = false;
     requestAnimationFrame(() => this.slideMenu.classList.add("open"));
     this.menuAccountSubpage.hidden = true;
-    if (this.cheatUI.menuCheatsSubpage) this.cheatUI.menuCheatsSubpage.hidden = true;
-    this.slideRomList.hidden = true;
   }
 
   closeMenu() {
@@ -317,7 +376,6 @@ class H5App {
     } else {
       this.menuAccountSubpage.hidden = isOpen;
     }
-    this.slideRomList.hidden = true;
   }
 
   // Delegation methods (kept for backwards compat / internal convenience)
@@ -325,33 +383,52 @@ class H5App {
   _syncSettingsUI() { this.settingsUI.syncSettingsUI(); }
   _applySettings() { this.settingsUI.applySettings(); }
 
-  async refreshRomList() {
-    this.slideRomList.hidden = false;
-    this.menuAccountSubpage.hidden = true;
-    this.slideRomList.innerHTML = "";
+  openLibraryModal(filter) {
+    if (!this.libraryModal || !this.libraryModalBody) {
+      this.updateStatus("页面资源未更新，请刷新后重试");
+      return;
+    }
+    this.currentFilter = filter || "all";
+    this.libraryModal.hidden = false;
+    const tabs = this.libraryModal.querySelectorAll(".pixel-tab");
+    tabs.forEach(t => t.classList.toggle("active", t.dataset.filter === this.currentFilter));
+    if (this.libraryModalTitle) {
+      this.libraryModalTitle.textContent = filter === "favorites" ? "收藏" : "游戏库";
+    }
+    this.refreshRomList(this.currentFilter);
+  }
+
+  closeLibraryModal() {
+    if (this.libraryModal) this.libraryModal.hidden = true;
+  }
+
+  async refreshRomList(filter) {
+    const body = this.libraryModalBody;
+    if (!body) return;
+    body.innerHTML = "";
 
     try {
-      const roms = await this.romManager.listROMs(this.currentFilter || "all");
+      const roms = await this.romManager.listROMs(filter || "all");
 
       this.bundledROMs.forEach((rom) => {
-        const item = this.createRomItem(rom.label, rom.url, true, false);
-        this.slideRomList.appendChild(item);
+        const item = this._createLibraryItem(rom.label, rom.url, true, false);
+        body.appendChild(item);
       });
 
-      if (roms.length === 0 && this.currentFilter === "favorites") {
-        const span = document.createElement("span");
+      if (roms.length === 0 && filter === "favorites") {
+        const span = document.createElement("div");
         span.textContent = "暂无收藏";
-        span.className = "rom-empty";
-        this.slideRomList.appendChild(span);
+        span.className = "library-empty";
+        body.appendChild(span);
       } else if (roms.length === 0) {
-        const span = document.createElement("span");
+        const span = document.createElement("div");
         span.textContent = "暂无上传的 ROM";
-        span.className = "rom-empty";
-        this.slideRomList.appendChild(span);
+        span.className = "library-empty";
+        body.appendChild(span);
       } else {
         roms.forEach((rom) => {
-          const item = this.createRomItem(rom.name, null, false, rom.favorite);
-          this.slideRomList.appendChild(item);
+          const item = this._createLibraryItem(rom.name, null, false, rom.favorite);
+          body.appendChild(item);
         });
       }
     } catch (e) {
@@ -359,12 +436,27 @@ class H5App {
     }
   }
 
-  createRomItem(name, url, isBundled, isFavorite) {
+  _createLibraryItem(name, url, isBundled, isFavorite) {
     const item = document.createElement("div");
-    item.className = "rom-item" + (this.currentRom === name ? " active" : "");
+    item.className = "library-game-item" + (this.currentRom === name ? " active" : "");
+
+    const icon = document.createElement("span");
+    icon.className = "library-game-icon";
+    icon.textContent = "🎮";
+
+    const info = document.createElement("div");
+    info.className = "library-game-info";
+    const nameSpan = document.createElement("div");
+    nameSpan.className = "library-game-name";
+    nameSpan.textContent = name;
+    const sub = document.createElement("div");
+    sub.className = "library-game-sub";
+    sub.textContent = isBundled ? "内置游戏" : "已上传";
+    info.appendChild(nameSpan);
+    info.appendChild(sub);
 
     const favBtn = document.createElement("button");
-    favBtn.className = "fav-btn" + (isFavorite ? " favorited" : "");
+    favBtn.className = "library-game-fav" + (isFavorite ? " favorited" : "");
     favBtn.textContent = isFavorite ? "★" : "☆";
     favBtn.addEventListener("click", async (e) => {
       e.stopPropagation();
@@ -372,21 +464,22 @@ class H5App {
       favBtn.textContent = newFav ? "★" : "☆";
       favBtn.classList.toggle("favorited", newFav);
       if (this.currentFilter === "favorites" && !newFav) {
-        this.refreshRomList();
+        this.refreshRomList(this.currentFilter);
       }
     });
 
-    const playBtn = document.createElement("button");
-    playBtn.className = "rom-name";
-    playBtn.textContent = (isBundled ? " " : "") + name;
-    playBtn.addEventListener("click", async () => {
+    item.appendChild(icon);
+    item.appendChild(info);
+    item.appendChild(favBtn);
+
+    item.addEventListener("click", async () => {
       this.currentRom = name;
       if (isBundled && url) {
         this.emulator.loadROMFromURL(url, name, (err) => {
           if (!err) {
             this.emulator.fitInParent();
             this.virtualGamepad.hidden = false;
-            this.closeMenu();
+            this.closeLibraryModal();
             this.cheatUI.syncCheats();
           }
         });
@@ -396,33 +489,61 @@ class H5App {
           this.emulator.loadROM(data, name);
           this.emulator.fitInParent();
           this.virtualGamepad.hidden = false;
-          this.closeMenu();
+          this.closeLibraryModal();
           this.cheatUI.syncCheats();
         }
       }
-      this.refreshRomList();
     });
-
-    const delBtn = document.createElement("button");
-    delBtn.className = "del-btn";
-    delBtn.textContent = "×";
-    if (isBundled) {
-      delBtn.style.display = "none";
-    }
-    delBtn.addEventListener("click", async (e) => {
-      e.stopPropagation();
-      if (confirm("Delete " + name + "?")) {
-        await this.romManager.deleteROM(name);
-        this.updateStatus(name + " deleted");
-        this.refreshRomList();
-      }
-    });
-
-    item.appendChild(favBtn);
-    item.appendChild(playBtn);
-    item.appendChild(delBtn);
 
     return item;
+  }
+
+  _takeScreenshot() {
+    if (!this.emulator || !this.emulator.getCurrentRom()) {
+      this.updateStatus("请先加载游戏");
+      return;
+    }
+    const dataUrl = this.emulator.screenshot();
+    if (!dataUrl) {
+      this.updateStatus("截图失败");
+      return;
+    }
+    const blob = this._dataURLToBlob(dataUrl);
+    const file = new File([blob], "nes-screenshot.png", { type: "image/png" });
+    if (navigator.share && navigator.canShare({ files: [file] })) {
+      navigator.share({
+        title: "NES 游戏截图",
+        text: "来看看我的 NES 游戏瞬间！",
+        files: [file],
+      }).then(() => {
+        this.updateStatus("截图已分享");
+      }).catch(() => {
+        this._downloadScreenshot(dataUrl);
+      });
+    } else {
+      this._downloadScreenshot(dataUrl);
+    }
+  }
+
+  _dataURLToBlob(dataUrl) {
+    const parts = dataUrl.split(",");
+    const mime = parts[0].match(/:(.*?);/)[1];
+    const bytes = atob(parts[1]);
+    const arr = new Uint8Array(bytes.length);
+    for (let i = 0; i < bytes.length; i++) {
+      arr[i] = bytes.charCodeAt(i);
+    }
+    return new Blob([arr], { type: mime });
+  }
+
+  _downloadScreenshot(dataUrl) {
+    const a = document.createElement("a");
+    a.href = dataUrl;
+    a.download = "nes-screenshot-" + Date.now() + ".png";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    this.updateStatus("截图已保存");
   }
 
   updateStatus(msg) {

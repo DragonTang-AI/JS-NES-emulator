@@ -1,7 +1,6 @@
 class CheatUI {
   constructor(app) {
     this.app = app;
-    this.menuCheatsSubpage = null;
     this.activeCheats = this._loadActiveCheats();
   }
 
@@ -28,27 +27,22 @@ class CheatUI {
   }
 
   init() {
-    this.menuCheatsSubpage = document.getElementById("menu-cheats-subpage");
     this._bindEvents();
   }
 
   _bindEvents() {
     this.app.menuCheats.addEventListener("click", () => {
-      if (this.menuCheatsSubpage.hidden) {
-        this._renderCheatGameList();
-      }
-      this.menuCheatsSubpage.hidden = !this.menuCheatsSubpage.hidden;
-      this.app.slideRomList.hidden = !this.menuCheatsSubpage.hidden;
+      this.app.closeMenu();
+      this._renderCheatModal();
     });
 
-    const cheatModalClose = document.getElementById("cheat-modal-close");
-    if (cheatModalClose) {
-      cheatModalClose.addEventListener("click", () => {
-        document.getElementById("cheat-modal").hidden = true;
+    const cheatModal = document.getElementById("cheat-modal");
+    const closeBtn = document.getElementById("cheat-modal-close");
+    if (closeBtn) {
+      closeBtn.addEventListener("click", () => {
+        if (cheatModal) cheatModal.hidden = true;
       });
     }
-
-    const cheatModal = document.getElementById("cheat-modal");
     if (cheatModal) {
       cheatModal.addEventListener("click", (e) => {
         if (e.target === cheatModal) {
@@ -147,17 +141,22 @@ class CheatUI {
     }
   }
 
-  _renderCheatGameList() {
-    const container = document.getElementById("menu-cheats-game-list");
-    if (!container) return;
+  _renderCheatModal() {
+    const container = document.getElementById("cheat-modal-body");
+    if (!container) {
+      this.app.updateStatus("页面资源未更新，请刷新后重试");
+      return;
+    }
     container.innerHTML = "";
     const currentCheats = this._getCurrentCheatLibrary();
     if (!this.app.currentRom) {
       container.innerHTML = '<div class="cheat-game-empty">请先加载游戏</div>';
+      this._openCheatModal();
       return;
     }
     if (currentCheats.length === 0) {
       container.innerHTML = '<div class="cheat-game-empty">该游戏暂无外挂库</div>';
+      this._openCheatModal();
       return;
     }
     for (const cheat of currentCheats) {
@@ -194,6 +193,12 @@ class CheatUI {
       item.appendChild(toggle);
       container.appendChild(item);
     }
+    this._openCheatModal();
+  }
+
+  _openCheatModal() {
+    const modal = document.getElementById("cheat-modal");
+    if (modal) modal.hidden = false;
   }
 
   _enableCheat(cheat) {

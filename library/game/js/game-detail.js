@@ -12,6 +12,7 @@ class GameDetailApp {
       "Mitsume ga Tooru (Japan).nes": { label: "三目通 (日版)", url: "/roms/Mitsume ga Tooru (Japan).nes", category: "puzzle", description: "-.", cover: null },
       "2010 Street Fighter (Japan) (Beta).nes": { label: "2010 街头霸王", url: "/roms/2010 Street Fighter (Japan) (Beta).nes", category: "puzzle", description: "-.", cover: null },
       "Colour 2001 Streetfighter II (Asia) (En) (Pirate).nes": { label: "2001 街头霸王II", url: "/roms/Colour 2001 Streetfighter II (Asia) (En) (Pirate).nes", category: "puzzle", description: "-.", cover: null },
+      "Contra (USA).nes": { label: "魂斗罗", url: "/roms/Contra (USA).nes", category: "action", description: "经典横版射击游戏，玩家控制比尔·雷泽或兰斯·比恩，消灭外星人拯救世界。", cover: null },
       "Crystalis (USA, Europe) (SNK 40th Anniversary Collection).nes": { label: "水晶之剑", url: "/roms/Crystalis (USA, Europe) (SNK 40th Anniversary Collection).nes", category: "puzzle", description: "-.", cover: null },
     };
   }

@@ -36,7 +36,7 @@ class Emulator {
   async init() {
     return new Promise((resolve, reject) => {
       const script = document.createElement("script");
-      script.src = "https://unpkg.com/jsnes@1.2.1/dist/jsnes.min.js";
+      script.src = "/jsnes.min.js";
       script.onload = async () => {
         if (!window.jsnes || !window.jsnes.NES) {
           reject(new Error("jsnes library not loaded correctly"));

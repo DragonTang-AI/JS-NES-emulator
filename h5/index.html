@@ -48,7 +48,12 @@
   </div>
 
   <div id="cheat-indicator" hidden></div>
+  <div id="orientation-toast" class="orientation-toast" hidden>
+    <span>💡 建议横屏游玩体验更佳</span>
+    <button id="orientation-toast-close">✕</button>
+  </div>
   <button id="fullscreen-btn" class="fullscreen-btn" aria-label="全屏">⛶</button>
+  <button id="screenshot-btn" class="screenshot-btn" aria-label="截图分享">📷</button>
 
   <div id="slide-menu" hidden>
     <div class="slide-menu-backdrop" id="slide-menu-backdrop"></div>
@@ -100,10 +105,7 @@
             <span class="menu-item-badge" id="menu-cheats-badge" hidden></span>
           </div>
         </div>
-        <div class="menu-subpage" id="menu-cheats-subpage" hidden>
-          <div class="menu-cheats-game-list" id="menu-cheats-game-list"></div>
-        </div>
-        <div class="menu-rom-list" id="slide-rom-list" hidden></div>
+
       </div>
       <div class="slide-menu-status" id="slide-menu-status"></div>
     </div>
@@ -170,24 +172,27 @@
     </div>
   </div>
 
-  <div id="cheat-modal" class="cheat-modal" hidden>
-    <div class="cheat-modal-card">
-      <div class="cheat-modal-header">
-        <span id="cheat-modal-title">外挂</span>
-        <button id="cheat-modal-close" class="cheat-modal-close">×</button>
+  <div id="library-modal" class="pixel-modal" hidden>
+    <div class="pixel-modal-card">
+      <div class="pixel-modal-header">
+        <span class="pixel-modal-title" id="library-modal-title">游戏库</span>
+        <button id="library-modal-close" class="pixel-modal-close">✕</button>
       </div>
-      <div class="cheat-modal-body">
-        <table class="cheat-table">
-          <thead>
-            <tr>
-              <th class="cheat-th-name">能力</th>
-              <th class="cheat-th-desc">介绍</th>
-              <th class="cheat-th-toggle">状态</th>
-            </tr>
-          </thead>
-          <tbody id="cheat-table-body"></tbody>
-        </table>
+      <div class="pixel-modal-tabs">
+        <button class="pixel-tab active" data-filter="all">游戏库</button>
+        <button class="pixel-tab" data-filter="favorites">收藏</button>
       </div>
+      <div class="pixel-modal-body" id="library-modal-body"></div>
+    </div>
+  </div>
+
+  <div id="cheat-modal" class="pixel-modal" hidden>
+    <div class="pixel-modal-card">
+      <div class="pixel-modal-header">
+        <span class="pixel-modal-title" id="cheat-modal-title">外挂</span>
+        <button id="cheat-modal-close" class="pixel-modal-close">×</button>
+      </div>
+      <div class="pixel-modal-body" id="cheat-modal-body"></div>
     </div>
   </div>
 
