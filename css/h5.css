@@ -1142,6 +1142,40 @@ body::after {
   border: 2px solid var(--border-color);
 }
 
+.cheat-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px;
+  background: var(--surface);
+  border: 2px solid var(--border-color);
+  border-radius: 0;
+  margin-bottom: 6px;
+}
+
+.cheat-item-label {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+
+.cheat-item-name {
+  font-size: 13px;
+  color: var(--text-color);
+}
+
+.cheat-item-desc {
+  font-size: 11px;
+  color: #777;
+}
+
+.cheat-enabled {
+  border-color: var(--accent-color);
+  background: rgba(255, 51, 102, 0.08);
+}
+
 .cheat-game-icon {
   font-size: 22px;
 }

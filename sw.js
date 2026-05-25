@@ -1,4 +1,4 @@
-const CACHE = 'nes-cache-v5';
+const CACHE = 'nes-cache-v6';
 
 const PRECACHE_URLS = [
   '/',
@@ -16,6 +16,9 @@ const PRECACHE_URLS = [
   '/js/pc/pc-app.js',
   '/js/h5/h5-app.js',
   '/js/h5/cheat-library.js',
+  '/js/h5/auth-ui.js',
+  '/js/h5/cheat-ui.js',
+  '/js/h5/settings-ui.js',
   '/js/h5/virtual-gamepad.js',
   '/js/library/library-app.js',
   '/manifest.json',

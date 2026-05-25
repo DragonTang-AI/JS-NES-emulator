@@ -34,38 +34,18 @@ class H5App {
     this.menuLibrary = document.getElementById("menu-library");
     this.menuFavorites = document.getElementById("menu-favorites");
     this.menuCheats = document.getElementById("menu-cheats");
-    this.menuCheatsBadge = document.getElementById("menu-cheats-badge");
-    this.menuCheatsSubpage = document.getElementById("menu-cheats-subpage");
-    this.cheatIndicator = document.getElementById("cheat-indicator");
-    this.menuCheatsGameList = document.getElementById("menu-cheats-game-list");
-    this.cheatModal = document.getElementById("cheat-modal");
-    this.cheatModalClose = document.getElementById("cheat-modal-close");
-    this.cheatModalTitle = document.getElementById("cheat-modal-title");
-    this.cheatTableBody = document.getElementById("cheat-table-body");
-    this.settingsBtn = document.getElementById("quick-settings-btn");
     this.cheatLibrary = window.NES_CHEAT_LIBRARY || [];
-    this.activeCheats = JSON.parse(localStorage.getItem("nes-active-cheats") || "[]");
     this.settingsModal = document.getElementById("settings-modal");
-    this.settingsClose = document.getElementById("settings-close");
     this.authPromptModal = document.getElementById("auth-prompt-modal");
     this.authPromptClose = document.getElementById("auth-prompt-close");
     this.authPromptLogin = document.getElementById("auth-prompt-login");
     this.authPromptGuest = document.getElementById("auth-prompt-guest");
-    this.settingMusic = document.getElementById("setting-music");
-    this.settingVolume = document.getElementById("setting-volume");
-    this.settingVolumeValue = document.getElementById("setting-volume-value");
-    this.settingJoystickMode = document.getElementById("setting-joystick-mode");
-    this.settingVibration = document.getElementById("setting-vibration");
-    this.settingShowHint = document.getElementById("setting-show-hint");
     this.authUsername = document.getElementById("auth-username");
     this.authPassword = document.getElementById("auth-password");
     this.authLoginBtn = document.getElementById("auth-login-btn");
     this.authRegisterBtn = document.getElementById("auth-register-btn");
     this.authLogoutBtn = document.getElementById("auth-logout-btn");
     this.authSyncBtn = document.getElementById("auth-sync-btn");
-    this.authToken = localStorage.getItem(this.authTokenKey) || null;
-    this.authUser = null;
-    this.authPromptDismissed = localStorage.getItem("nes-auth-prompt-dismissed") === "1";
     this.currentFilter = null;
     this.currentRom = null;
     this.bundledROMs = [
@@ -75,7 +55,9 @@ class H5App {
       { name: "Colour 2001 Streetfighter II (Asia) (En) (Pirate).nes", url: "/roms/Colour 2001 Streetfighter II (Asia) (En) (Pirate).nes", label: "2001 街头霸王II" },
       { name: "Crystalis (USA, Europe) (SNK 40th Anniversary Collection).nes", url: "/roms/Crystalis (USA, Europe) (SNK 40th Anniversary Collection).nes", label: "水晶之剑" },
     ];
-    this._loadSettings();
+    this.authUI = new AuthUI(this);
+    this.cheatUI = new CheatUI(this);
+    this.settingsUI = new SettingsUI(this);
   }
 
   async init() {
@@ -86,12 +68,6 @@ class H5App {
       onLoading: (percent, text) => this._updateLoading(percent, text),
     });
 
-    this.emulator.onCloudAuthExpired = () => {
-      this._setAuthState(null, null);
-      this.updateStatus("登录已过期，请重新登录以启用云存档");
-      this.authPromptModal.hidden = false;
-    };
-
     this.romManager = new RomManager();
     this.saveManager = new SaveManager(this.emulator, "nes-container");
 
@@ -99,16 +75,12 @@ class H5App {
       await this.emulator.init();
       await this.romManager.init();
       this.saveManager.init();
+      this.authUI.init();
+      this.cheatUI.init();
+      this.settingsUI.init();
       this.bindEvents();
-      await this.restoreAuthSession();
-      this._syncCheats();
-      if (!this.authUser && !this.authPromptDismissed) {
-        setTimeout(() => {
-          this.authPromptModal.hidden = false;
-        }, 1500);
-      }
-      this._syncSettingsUI();
-      this._applySettings();
+      await this.authUI.restoreAuthSession();
+      this.cheatUI.syncCheats();
       this.updateStatus("Ready");
       const loadedFromQuery = await this.loadFromQueryParams();
       if (!loadedFromQuery) {
@@ -148,7 +120,7 @@ class H5App {
         if (!err) {
           this.emulator.fitInParent();
           this.virtualGamepad.hidden = false;
-          this._syncCheats();
+          this.cheatUI.syncCheats();
         }
       });
     }
@@ -167,7 +139,7 @@ class H5App {
           if (!err) {
             this.emulator.fitInParent();
             this.virtualGamepad.hidden = false;
-            this._syncCheats();
+            this.cheatUI.syncCheats();
           }
         });
         return true;
@@ -179,7 +151,7 @@ class H5App {
         this.currentRom = displayName || romParam;
         this.emulator.fitInParent();
         this.virtualGamepad.hidden = false;
-        this._syncCheats();
+        this.cheatUI.syncCheats();
         return true;
       }
     } catch (e) {
@@ -230,61 +202,6 @@ class H5App {
       this.closeMenu();
     });
 
-    if (this.settingsBtn) {
-      this.settingsBtn.addEventListener("click", () => {
-        this._syncSettingsUI();
-        this.settingsModal.hidden = false;
-      });
-    }
-
-    this.settingsClose.addEventListener("click", () => {
-      this.settingsModal.hidden = true;
-    });
-
-    this.settingsModal.addEventListener("click", (e) => {
-      if (e.target === this.settingsModal) {
-        this.settingsModal.hidden = true;
-      }
-    });
-
-    if (this.authPromptClose) {
-      this.authPromptClose.addEventListener("click", () => {
-        this.authPromptModal.hidden = true;
-      });
-    }
-
-    if (this.authPromptGuest) {
-      this.authPromptGuest.addEventListener("click", () => {
-        this.authPromptModal.hidden = true;
-        this.authPromptDismissed = true;
-        localStorage.setItem("nes-auth-prompt-dismissed", "1");
-        this.updateStatus("游客模式：可游玩，但无法永久云存档");
-      });
-    }
-
-    if (this.authPromptLogin) {
-      this.authPromptLogin.addEventListener("click", () => {
-        this.authPromptModal.hidden = true;
-        this.authPromptDismissed = true;
-        localStorage.setItem("nes-auth-prompt-dismissed", "1");
-        this.openMenu();
-        this._toggleAccountSubpage(true);
-        if (this.authUsername) this.authUsername.focus();
-      });
-    }
-
-    if (this.authPromptModal) {
-      this.authPromptModal.addEventListener("click", (e) => {
-        if (e.target === this.authPromptModal) {
-          this.authPromptModal.hidden = true;
-        }
-      });
-    }
-
-    this.menuAccount.addEventListener("click", () => {
-      this._toggleAccountSubpage();
-    });
-
     this.menuUpload.addEventListener("click", () => {
       this.fileInput.click();
     });
@@ -302,24 +219,6 @@ class H5App {
       this.menuLibrary.classList.remove("active");
       this.refreshRomList();
     });
-
-    this.menuCheats.addEventListener("click", () => {
-      const isOpen = !this.menuCheatsSubpage.hidden;
-      this.menuCheatsSubpage.hidden = isOpen;
-      this.slideRomList.hidden = true;
-      if (!isOpen) this._renderCheatGameList();
-    });
-
-    if (this.cheatModalClose) {
-      this.cheatModalClose.addEventListener("click", () => {
-        this.cheatModal.hidden = true;
-      });
-    }
-    if (this.cheatModal) {
-      this.cheatModal.addEventListener("click", (e) => {
-        if (e.target === this.cheatModal) this.cheatModal.hidden = true;
-      });
-    }
 
     document.getElementById("btn-save").addEventListener("click", () => {
       if (this.emulator.getCurrentRom()) {
@@ -346,89 +245,13 @@ class H5App {
         this.currentRom = file.name;
         this.emulator.fitInParent();
         this.virtualGamepad.hidden = false;
-        this._syncCheats();
+        this.cheatUI.syncCheats();
         this.closeMenu();
       } catch (err) {
         this.handleError(err);
       }
       this.fileInput.value = "";
     });
-
-    this.settingMusic.addEventListener("change", () => {
-      this.settings.musicEnabled = this.settingMusic.checked;
-      this._saveSettings();
-      this._applySettings();
-    });
-
-    this.settingVolume.addEventListener("input", () => {
-      this.settings.volume = Number(this.settingVolume.value);
-      this.settingVolumeValue.textContent = this.settings.volume + "%";
-      this._saveSettings();
-      this._applySettings();
-    });
-
-    this.settingJoystickMode.addEventListener("change", () => {
-      this.settings.joystickMode = this.settingJoystickMode.value === "fixed" ? "fixed" : "floating";
-      this._saveSettings();
-      this._applySettings();
-    });
-
-    this.settingVibration.addEventListener("change", () => {
-      this.settings.vibrationEnabled = this.settingVibration.checked;
-      this._saveSettings();
-      this._applySettings();
-    });
-
-    this.settingShowHint.addEventListener("change", () => {
-      this.settings.showJoystickHint = this.settingShowHint.checked;
-      this._saveSettings();
-      this._applySettings();
-    });
-
-    if (this.authLoginBtn) {
-      this.authLoginBtn.addEventListener("click", async () => {
-        await this.login();
-      });
-    }
-
-    if (this.authRegisterBtn) {
-      this.authRegisterBtn.addEventListener("click", async () => {
-        await this.register();
-      });
-    }
-
-    if (this.authLogoutBtn) {
-      this.authLogoutBtn.addEventListener("click", async () => {
-        await this.logout();
-      });
-    }
-
-    if (this.authSyncBtn) {
-      this.authSyncBtn.addEventListener("click", async () => {
-        if (!this.emulator.isCloudReachable()) {
-          this.updateStatus(this.emulator.isCloudAuthed() ? "当前离线，无法同步" : "未登录");
-          return;
-        }
-        this.authSyncBtn.disabled = true;
-        const user = this.authUser ? " (" + this.authUser.username + ")" : "";
-        this.updateStatus("正在同步云存档" + user + "...");
-        const result = await this.emulator.syncCloudSaves();
-        this.authSyncBtn.disabled = false;
-        if (result.ok) {
-          const parts = [];
-          if (result.pushed > 0) parts.push(result.pushed + "\u4E2A\u4E0A\u4F20");
-          if (result.pulled > 0) parts.push(result.pulled + "\u4E2A\u4E0B\u8F7D");
-          const msg = parts.length > 0 ? "\u540C\u6B65\u5B8C\u6210\uFF1A" + parts.join("\uFF0C") : "\u6240\u6709\u5B58\u6863\u5DF2\u662F\u6700\u65B0";
-          this.updateStatus(msg + user);
-        } else if (result.reason === "no_login") {
-          this.updateStatus("\u672A\u767B\u5F55\uFF0C\u65E0\u6CD5\u540C\u6B65");
-        } else if (result.reason === "offline") {
-          this.updateStatus("\u5F53\u524D\u79BB\u7EBF\uFF0C\u65E0\u6CD5\u540C\u6B65");
-        } else {
-          this.updateStatus("\u540C\u6B65\u5931\u8D25\uFF0C\u8BF7\u7A0D\u540E\u91CD\u8BD5");
-        }
-      });
-    }
 
     const fullscreenBtn = document.getElementById("fullscreen-btn");
     if (fullscreenBtn) {
@@ -445,8 +268,7 @@ class H5App {
       showJoystickHint: this.settings.showJoystickHint,
     });
     this.gamepad.init();
-    this._applySettings();
-    this._syncAuthUI();
+    this.settingsUI.applySettings();
   }
 
   _bindDoubleTapFullscreen() {
@@ -477,7 +299,7 @@ class H5App {
     this.slideMenu.hidden = false;
     requestAnimationFrame(() => this.slideMenu.classList.add("open"));
     this.menuAccountSubpage.hidden = true;
-    this.menuCheatsSubpage.hidden = true;
+    if (this.cheatUI.menuCheatsSubpage) this.cheatUI.menuCheatsSubpage.hidden = true;
     this.slideRomList.hidden = true;
   }
 
@@ -498,162 +320,10 @@ class H5App {
     this.slideRomList.hidden = true;
   }
 
-  async apiRequest(path, method = "GET", body = null, withAuth = true) {
-    const headers = {
-      "Content-Type": "application/json",
-    };
-    if (withAuth && this.authToken) {
-      headers.Authorization = "Bearer " + this.authToken;
-    }
-    const res = await fetch("/api" + path, {
-      method,
-      headers,
-      body: body ? JSON.stringify(body) : null,
-    });
-    const data = await res.json().catch(() => ({}));
-    if (!res.ok) {
-      throw new Error(data.error || "Request failed");
-    }
-    return data;
-  }
-
-  _setAuthState(token, user) {
-    this.authToken = token || null;
-    this.authUser = user || null;
-    if (this.authToken) {
-      localStorage.setItem(this.authTokenKey, this.authToken);
-      if (this.emulator) {
-        this.emulator.setCloudAuth(this.authToken, this.authUser);
-      }
-    } else {
-      localStorage.removeItem(this.authTokenKey);
-      if (this.emulator) {
-        this.emulator.clearCloudAuth();
-      }
-    }
-    this._syncAuthUI();
-  }
-
-  _syncAuthUI() {
-    if (this.authUser && this.authUser.username) {
-      this.menuAccountLabel.textContent = this.authUser.username;
-      if (this.menuAuthForm) this.menuAuthForm.hidden = true;
-      if (this.menuAuthInfo) {
-        this.menuAuthInfo.hidden = false;
-        this.menuAuthUser.textContent = "已登录: " + this.authUser.username;
-      }
-    } else {
-      this.menuAccountLabel.textContent = "未登录";
-      if (this.menuAuthForm) this.menuAuthForm.hidden = false;
-      if (this.menuAuthInfo) this.menuAuthInfo.hidden = true;
-    }
-  }
-
-  async restoreAuthSession() {
-    if (!this.authToken) {
-      this._setAuthState(null, null);
-      return;
-    }
-    try {
-      const data = await this.apiRequest("/auth/me", "GET", null, true);
-      this._setAuthState(this.authToken, data.user || null);
-    } catch (e) {
-      this._setAuthState(null, null);
-    }
-  }
-
-  async register() {
-    const username = (this.authUsername && this.authUsername.value || "").trim();
-    const password = (this.authPassword && this.authPassword.value || "").trim();
-    if (username.length < 3 || username.length > 24) {
-      this.updateStatus("账号长度需 3-24 位");
-      return;
-    }
-    if (password.length < 6) {
-      this.updateStatus("密码至少 6 位");
-      return;
-    }
-    try {
-      await this.apiRequest("/auth/register", "POST", { username, password }, false);
-      this.updateStatus("注册成功，请登录");
-    } catch (e) {
-      this.updateStatus("注册失败: " + e.message);
-    }
-  }
-
-  async login() {
-    const username = (this.authUsername && this.authUsername.value || "").trim();
-    const password = (this.authPassword && this.authPassword.value || "").trim();
-    if (!username || !password) {
-      this.updateStatus("请输入账号和密码");
-      return;
-    }
-    try {
-      const data = await this.apiRequest("/auth/login", "POST", { username, password }, false);
-      this._setAuthState(data.token, data.user || null);
-      this._toggleAccountSubpage(false);
-      this.updateStatus("登录成功，云存档已启用");
-      if (this.authPassword) this.authPassword.value = "";
-    } catch (e) {
-      this.updateStatus("登录失败: " + e.message);
-    }
-  }
-
-  async logout() {
-    this._setAuthState(null, null);
-    this._toggleAccountSubpage(false);
-    this.updateStatus("已退出登录");
-  }
-
-  _loadSettings() {
-    try {
-      const raw = localStorage.getItem(this.settingsKey);
-      if (!raw) return;
-      const parsed = JSON.parse(raw);
-      this.settings = {
-        ...this.settings,
-        ...parsed,
-      };
-      if (this.settings.joystickMode !== "fixed" && this.settings.joystickMode !== "floating") {
-        this.settings.joystickMode = "floating";
-      }
-      this.settings.volume = Math.max(0, Math.min(100, Number(this.settings.volume) || 80));
-      this.settings.musicEnabled = !!this.settings.musicEnabled;
-      this.settings.vibrationEnabled = !!this.settings.vibrationEnabled;
-      this.settings.showJoystickHint = !!this.settings.showJoystickHint;
-    } catch (e) {
-      console.warn("Load settings failed:", e);
-    }
-  }
-
-  _saveSettings() {
-    try {
-      localStorage.setItem(this.settingsKey, JSON.stringify(this.settings));
-    } catch (e) {
-      console.warn("Save settings failed:", e);
-    }
-  }
-
-  _syncSettingsUI() {
-    this.settingMusic.checked = this.settings.musicEnabled;
-    this.settingVolume.value = String(this.settings.volume);
-    this.settingVolumeValue.textContent = this.settings.volume + "%";
-    this.settingJoystickMode.value = this.settings.joystickMode;
-    this.settingVibration.checked = this.settings.vibrationEnabled;
-    this.settingShowHint.checked = this.settings.showJoystickHint;
-  }
-
-  _applySettings() {
-    if (this.emulator) {
-      this.emulator.setMuted(!this.settings.musicEnabled);
-      this.emulator.setVolume(this.settings.volume / 100);
-    }
-    if (this.gamepad) {
-      this.gamepad.setJoystickMode(this.settings.joystickMode);
-      this.gamepad.setVibrationEnabled(this.settings.vibrationEnabled);
-      this.gamepad.setShowHint(this.settings.showJoystickHint);
-    }
-  }
+  // Delegation methods (kept for backwards compat / internal convenience)
+  _syncCheats() { this.cheatUI.syncCheats(); }
+  _syncSettingsUI() { this.settingsUI.syncSettingsUI(); }
+  _applySettings() { this.settingsUI.applySettings(); }
 
   async refreshRomList() {
     this.slideRomList.hidden = false;
@@ -717,7 +387,7 @@ class H5App {
             this.emulator.fitInParent();
             this.virtualGamepad.hidden = false;
             this.closeMenu();
-            this._syncCheats();
+            this.cheatUI.syncCheats();
           }
         });
       } else {
@@ -727,7 +397,7 @@ class H5App {
           this.emulator.fitInParent();
           this.virtualGamepad.hidden = false;
           this.closeMenu();
-          this._syncCheats();
+          this.cheatUI.syncCheats();
         }
       }
       this.refreshRomList();
@@ -765,160 +435,6 @@ class H5App {
     console.error(e);
     this.updateStatus("Error: " + e.message);
     this.loadingOverlay.classList.add("hidden");
-  }
-
-  _getActiveCheatCodes() {
-    const lib = this._getCurrentCheatLibrary();
-    if (!lib) return [];
-    const codes = [];
-    this.activeCheats.forEach((ac) => {
-      if (ac.game !== lib.game || !ac.enabled) return;
-      for (const cheat of lib.cheats) {
-        if (cheat.name === ac.name) {
-          codes.push(...cheat.codes);
-        }
-      }
-    });
-    return codes;
-  }
-
-  _getCurrentCheatLibrary() {
-    const rom = this.currentRom || (this.emulator && this.emulator.getCurrentRom && this.emulator.getCurrentRom()) || "";
-    if (!rom) return null;
-    const romLower = rom.toLowerCase().replace(/\.[^.]+$/, "");
-    return this.cheatLibrary.find((lib) => {
-      if (lib.game === rom) return true;
-      return (lib.roms || []).some((name) => {
-        const nLower = name.toLowerCase().replace(/\.[^.]+$/, "");
-        return nLower === romLower || romLower.includes(nLower) || nLower.includes(romLower);
-      });
-    }) || null;
-  }
-
-  _syncCheats() {
-    localStorage.setItem("nes-active-cheats", JSON.stringify(this.activeCheats));
-    if (this.emulator) {
-      this.emulator.setCheats(this._getActiveCheatCodes());
-    }
-    this._updateCheatBadge();
-    this._updateCheatIndicator();
-  }
-
-  _updateCheatBadge() {
-    const lib = this._getCurrentCheatLibrary();
-    if (lib && lib.cheats && lib.cheats.length > 0) {
-      this.menuCheatsBadge.textContent = lib.cheats.length + "\u9879";
-      this.menuCheatsBadge.hidden = false;
-    } else {
-      this.menuCheatsBadge.hidden = true;
-    }
-  }
-
-  _updateCheatIndicator() {
-    const lib = this._getCurrentCheatLibrary();
-    let names = [];
-    if (lib) {
-      this.activeCheats.forEach((ac) => {
-        if (ac.game !== lib.game || !ac.enabled) return;
-        names.push(ac.name);
-      });
-    }
-    if (names.length > 0) {
-      this.cheatIndicator.textContent = "\u26A1 " + names.join("\u3001");
-      this.cheatIndicator.hidden = false;
-    } else {
-      this.cheatIndicator.hidden = true;
-    }
-  }
-
-  _renderCheatGameList() {
-    this.menuCheatsGameList.innerHTML = "";
-    const lib = this._getCurrentCheatLibrary();
-    if (!lib) {
-      const empty = document.createElement("div");
-      empty.className = "cheat-game-empty";
-      empty.textContent = this.currentRom ? "该游戏暂无外挂库" : "请先加载游戏";
-      this.menuCheatsGameList.appendChild(empty);
-      this._syncCheats();
-      return;
-    }
-
-    [lib].forEach((lib) => {
-      const item = document.createElement("div");
-      item.className = "cheat-game-item";
-
-      const icon = document.createElement("span");
-      icon.className = "cheat-game-icon";
-      icon.textContent = "🎮";
-
-      const name = document.createElement("span");
-      name.className = "cheat-game-name";
-      name.textContent = lib.game;
-
-      const arrow = document.createElement("span");
-      arrow.className = "cheat-game-arrow";
-      arrow.textContent = "›";
-
-      item.appendChild(icon);
-      item.appendChild(name);
-      item.appendChild(arrow);
-
-      item.addEventListener("click", () => this._openCheatModal(lib.game));
-      this.menuCheatsGameList.appendChild(item);
-    });
-  }
-
-  _openCheatModal(game) {
-    const lib = this._getCurrentCheatLibrary();
-    if (!lib || lib.game !== game) {
-      this.updateStatus("该游戏暂无外挂库");
-      return;
-    }
-    this.cheatModalTitle.textContent = game + " - 外挂";
-    this.cheatTableBody.innerHTML = "";
-    lib.cheats.forEach((cheat) => {
-      const active = this.activeCheats.find((ac) => ac.game === game && ac.name === cheat.name);
-      const enabled = active ? active.enabled : false;
-
-      const tr = document.createElement("tr");
-
-      const tdName = document.createElement("td");
-      tdName.className = "cheat-td-name";
-      tdName.textContent = cheat.name;
-
-      const tdDesc = document.createElement("td");
-      tdDesc.className = "cheat-td-desc";
-      tdDesc.textContent = cheat.desc;
-
-      const tdToggle = document.createElement("td");
-      tdToggle.className = "cheat-td-toggle";
-
-      const toggle = document.createElement("button");
-      toggle.className = "cheat-toggle" + (enabled ? " cheat-toggle-on" : "");
-      toggle.textContent = enabled ? "ON" : "OFF";
-      toggle.addEventListener("click", () => {
-        const idx = this.activeCheats.findIndex((ac) => ac.game === game && ac.name === cheat.name);
-        if (idx >= 0) {
-          this.activeCheats[idx].enabled = !this.activeCheats[idx].enabled;
-          if (this.activeCheats[idx].enabled === false) {
-            this.activeCheats.splice(idx, 1);
-          }
-        } else {
-          this.activeCheats.push({ game, name: cheat.name, enabled: true });
-        }
-        this._syncCheats();
-        const activeNow = this.activeCheats.some((ac) => ac.game === game && ac.name === cheat.name && ac.enabled);
-        this.updateStatus((activeNow ? "已启用：" : "已关闭：") + cheat.name);
-        this._openCheatModal(game);
-      });
-      tdToggle.appendChild(toggle);
-
-      tr.appendChild(tdName);
-      tr.appendChild(tdDesc);
-      tr.appendChild(tdToggle);
-      this.cheatTableBody.appendChild(tr);
-    });
-    this.cheatModal.hidden = false;
   }
 }
 
