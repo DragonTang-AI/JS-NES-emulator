@@ -252,6 +252,7 @@ class Emulator {
     this.onLoading(0, "Loading " + romName + "...");
     try {
       this.nes.loadROM(data);
+      this._applyMapperFixes();
       this._startLoop();
       this._fitScreen();
       this._initAudio();
@@ -458,6 +459,90 @@ class Emulator {
     requestAnimationFrame(() => {
       this.fitInParent();
     });
+  }
+
+  _applyMapperFixes() {
+    if (!this.nes || !this.nes.mmap) return;
+    if (this.nes.mmap.constructor && this.nes.mmap.constructor.name === "Mapper4") {
+      this._applyMMC3IrqFix(this.nes.mmap);
+    }
+  }
+
+  _applyMMC3IrqFix(mapper) {
+    if (!mapper || mapper._mmc3IrqFixApplied) return;
+
+    mapper._mmc3IrqFixApplied = true;
+    mapper.irqReloadPending = false;
+
+    mapper.write = function (address, value) {
+      if (address < 0x8000) {
+        Object.getPrototypeOf(Object.getPrototypeOf(mapper)).write.call(
+          this,
+          address,
+          value
+        );
+        return;
+      }
+
+      switch (address & 0xe001) {
+        case 0x8000:
+          this.command = value & 7;
+          {
+            const tmp = (value >> 6) & 1;
+            if (tmp !== this.prgAddressSelect) {
+              this.prgAddressChanged = true;
+            }
+            this.prgAddressSelect = tmp;
+          }
+          this.chrAddressSelect = (value >> 7) & 1;
+          break;
+
+        case 0x8001:
+          this.executeCommand(this.command, value);
+          break;
+
+        case 0xa000:
+          if ((value & 1) !== 0) {
+            this.nes.ppu.setMirroring(this.nes.rom.HORIZONTAL_MIRRORING);
+          } else {
+            this.nes.ppu.setMirroring(this.nes.rom.VERTICAL_MIRRORING);
+          }
+          break;
+
+        case 0xa001:
+          break;
+
+        case 0xc000:
+          this.irqLatchValue = value;
+          break;
+
+        case 0xc001:
+          this.irqReloadPending = true;
+          break;
+
+        case 0xe000:
+          this.irqEnable = 0;
+          this.nes.cpu.irqRequested = false;
+          break;
+
+        case 0xe001:
+          this.irqEnable = 1;
+          break;
+      }
+    };
+
+    mapper.clockIrqCounter = function () {
+      if (this.irqCounter === 0 || this.irqReloadPending) {
+        this.irqCounter = this.irqLatchValue;
+        this.irqReloadPending = false;
+      } else {
+        this.irqCounter--;
+      }
+
+      if (this.irqCounter === 0 && this.irqEnable === 1) {
+        this.nes.cpu.requestIrq(this.nes.cpu.IRQ_NORMAL);
+      }
+    };
   }
 
   _compressForCloud(state) {
