@@ -941,6 +941,19 @@ body::after {
   text-align: right;
 }
 
+.settings-row-debug {
+  align-items: flex-start;
+}
+
+.settings-debug-info {
+  font-size: 11px;
+  color: #9aa0c5;
+  text-align: right;
+  line-height: 1.4;
+  max-width: 180px;
+  word-break: break-word;
+}
+
 /* ── Portrait Mode ── */
 @media screen and (orientation: portrait) {
   body.portrait {

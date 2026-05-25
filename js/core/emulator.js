@@ -31,6 +31,7 @@ class Emulator {
     this.cloudToken = null;
     this.cloudUser = null;
     this.cloudApiBase = "/api";
+    this.mmc3FixEnabled = true;
   }
 
   async init() {
@@ -324,6 +325,9 @@ class Emulator {
     const loop = () => {
       if (!this.running) return;
       try {
+        if (this.nes && this.nes.ppu && !this.nes.ppu.secondaryOAM) {
+          this.nes.ppu.secondaryOAM = new Uint8Array(32);
+        }
         this.nes.frame();
         this._applyCheats();
       } catch (e) {
@@ -463,7 +467,9 @@ class Emulator {
 
   _applyMapperFixes() {
     if (!this.nes || !this.nes.mmap) return;
-    if (this.nes.mmap.constructor && this.nes.mmap.constructor.name === "Mapper4") {
+    const isMapper4 = this.nes.mmap.constructor && this.nes.mmap.constructor.name === "Mapper4";
+    if (!isMapper4) return;
+    if (this.mmc3FixEnabled) {
       this._applyMMC3IrqFix(this.nes.mmap);
     }
   }
@@ -471,6 +477,8 @@ class Emulator {
   _applyMMC3IrqFix(mapper) {
     if (!mapper || mapper._mmc3IrqFixApplied) return;
 
+    mapper._mmc3OriginalWrite = mapper.write;
+    mapper._mmc3OriginalClockIrqCounter = mapper.clockIrqCounter;
     mapper._mmc3IrqFixApplied = true;
     mapper.irqReloadPending = false;
 
@@ -542,6 +550,26 @@ class Emulator {
       if (this.irqCounter === 0 && this.irqEnable === 1) {
         this.nes.cpu.requestIrq(this.nes.cpu.IRQ_NORMAL);
       }
+    };
+  }
+
+  setMMC3FixEnabled(enabled) {
+    this.mmc3FixEnabled = enabled !== false;
+    this.onStatusUpdate("MMC3 修复开关已更新，重新加载 ROM 后生效");
+  }
+
+  getMapperDebugInfo() {
+    if (!this.nes || !this.nes.rom || !this.nes.mmap) {
+      return { ready: false };
+    }
+    const mapper = Number.isFinite(this.nes.rom.mapperType) ? this.nes.rom.mapperType : -1;
+    const mapperName = (this.nes.mmap.constructor && this.nes.mmap.constructor.name) || "Unknown";
+    return {
+      ready: true,
+      mapper,
+      mapperName,
+      mmc3FixEnabled: this.mmc3FixEnabled,
+      mmc3FixApplied: !!this.nes.mmap._mmc3IrqFixApplied,
     };
   }
 
