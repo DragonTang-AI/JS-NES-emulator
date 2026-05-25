@@ -85,7 +85,27 @@ class CheatUI {
     return [];
   }
 
+  _refreshStoredCodes() {
+    const lib = this._getCurrentCheatLibrary();
+    if (!lib || lib.length === 0) return;
+    let changed = false;
+    for (const stored of this.activeCheats) {
+      const match = lib.find((lc) => lc.id === stored.id);
+      if (match) {
+        const oldJson = JSON.stringify(stored.codes);
+        const newJson = JSON.stringify(match.codes);
+        if (oldJson !== newJson) {
+          stored.codes = match.codes;
+          stored.name = match.name;
+          changed = true;
+        }
+      }
+    }
+    if (changed) this._saveActiveCheats();
+  }
+
   syncCheats() {
+    this._refreshStoredCodes();
     const currentCodes = this._getActiveCheatCodes();
     if (this.app.emulator) {
       this.app.emulator.setCheats(currentCodes);
@@ -178,7 +198,10 @@ class CheatUI {
 
   _enableCheat(cheat) {
     const existing = this.activeCheats.find((c) => c.id === cheat.id);
-    if (!existing) {
+    if (existing) {
+      existing.codes = cheat.codes;
+      existing.name = cheat.name;
+    } else {
       this.activeCheats.push({
         id: cheat.id,
         name: cheat.name,
