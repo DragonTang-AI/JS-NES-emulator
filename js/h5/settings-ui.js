@@ -19,7 +19,6 @@ class SettingsUI {
     if (settingsBtn) {
       settingsBtn.addEventListener("click", () => {
         settingsModal.hidden = !settingsModal.hidden;
-        if (!settingsModal.hidden) this._updateMapperDebugInfo();
       });
     }
 
@@ -42,7 +41,6 @@ class SettingsUI {
     const settingJoystickMode = document.getElementById("setting-joystick-mode");
     const settingVibration = document.getElementById("setting-vibration");
     const settingShowHint = document.getElementById("setting-show-hint");
-    const settingMmc3Fix = document.getElementById("setting-mmc3-fix");
 
     if (settingMusic) {
       settingMusic.addEventListener("change", () => {
@@ -86,16 +84,6 @@ class SettingsUI {
         this.applySettings();
       });
     }
-
-    if (settingMmc3Fix) {
-      settingMmc3Fix.addEventListener("change", () => {
-        this.app.settings.mmc3FixEnabled = settingMmc3Fix.checked;
-        this._saveSettings();
-        this.applySettings();
-      });
-    }
-
-    this._updateMapperDebugInfo();
   }
 
   _loadSettings() {
@@ -128,7 +116,6 @@ class SettingsUI {
     const settingJoystickMode = document.getElementById("setting-joystick-mode");
     const settingVibration = document.getElementById("setting-vibration");
     const settingShowHint = document.getElementById("setting-show-hint");
-    const settingMmc3Fix = document.getElementById("setting-mmc3-fix");
     const volumeLabel = document.getElementById("setting-volume-value");
 
     if (settingMusic) settingMusic.checked = this.app.settings.musicEnabled !== false;
@@ -137,8 +124,6 @@ class SettingsUI {
     if (settingJoystickMode) settingJoystickMode.value = this.app.settings.joystickMode || "floating";
     if (settingVibration) settingVibration.checked = this.app.settings.vibrationEnabled !== false;
     if (settingShowHint) settingShowHint.checked = this.app.settings.showJoystickHint !== false;
-    if (settingMmc3Fix) settingMmc3Fix.checked = this.app.settings.mmc3FixEnabled !== false;
-    this._updateMapperDebugInfo();
   }
 
   applySettings() {
@@ -151,25 +136,5 @@ class SettingsUI {
       this.app.gamepad.setVibrationEnabled(this.app.settings.vibrationEnabled !== false);
       this.app.gamepad.setShowHint(this.app.settings.showJoystickHint !== false);
     }
-    if (this.app.emulator && typeof this.app.emulator.setMMC3FixEnabled === "function") {
-      this.app.emulator.setMMC3FixEnabled(this.app.settings.mmc3FixEnabled !== false);
-    }
-    this._updateMapperDebugInfo();
-  }
-
-  _updateMapperDebugInfo() {
-    const infoEl = document.getElementById("mapper-debug-info");
-    if (!infoEl) return;
-    if (!this.app.emulator || typeof this.app.emulator.getMapperDebugInfo !== "function") {
-      infoEl.textContent = "模拟器未就绪";
-      return;
-    }
-    const info = this.app.emulator.getMapperDebugInfo();
-    if (!info || !info.ready) {
-      infoEl.textContent = "未加载 ROM";
-      return;
-    }
-    const mmc3Fix = info.mmc3FixEnabled ? "ON" : "OFF";
-    infoEl.textContent = "M" + info.mapper + " / " + info.mapperName + " / MMC3=" + mmc3Fix;
   }
 }

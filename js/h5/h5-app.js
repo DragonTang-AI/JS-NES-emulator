@@ -8,7 +8,6 @@ class H5App {
       joystickMode: "floating",
       vibrationEnabled: true,
       showJoystickHint: true,
-      mmc3FixEnabled: true,
     };
     this.emulator = null;
     this.romManager = null;

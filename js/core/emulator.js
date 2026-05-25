@@ -31,13 +31,12 @@ class Emulator {
     this.cloudToken = null;
     this.cloudUser = null;
     this.cloudApiBase = "/api";
-    this.mmc3FixEnabled = true;
   }
 
   async init() {
     return new Promise((resolve, reject) => {
       const script = document.createElement("script");
-      script.src = "/jsnes.min.js";
+      script.src = "https://unpkg.com/jsnes@1.2.1/dist/jsnes.min.js";
       script.onload = async () => {
         if (!window.jsnes || !window.jsnes.NES) {
           reject(new Error("jsnes library not loaded correctly"));
@@ -253,7 +252,6 @@ class Emulator {
     this.onLoading(0, "Loading " + romName + "...");
     try {
       this.nes.loadROM(data);
-      this._applyMapperFixes();
       this._startLoop();
       this._fitScreen();
       this._initAudio();
@@ -325,9 +323,6 @@ class Emulator {
     const loop = () => {
       if (!this.running) return;
       try {
-        if (this.nes && this.nes.ppu && !this.nes.ppu.secondaryOAM) {
-          this.nes.ppu.secondaryOAM = new Uint8Array(32);
-        }
         this.nes.frame();
         this._applyCheats();
       } catch (e) {
@@ -463,114 +458,6 @@ class Emulator {
     requestAnimationFrame(() => {
       this.fitInParent();
     });
-  }
-
-  _applyMapperFixes() {
-    if (!this.nes || !this.nes.mmap) return;
-    const isMapper4 = this.nes.mmap.constructor && this.nes.mmap.constructor.name === "Mapper4";
-    if (!isMapper4) return;
-    if (this.mmc3FixEnabled) {
-      this._applyMMC3IrqFix(this.nes.mmap);
-    }
-  }
-
-  _applyMMC3IrqFix(mapper) {
-    if (!mapper || mapper._mmc3IrqFixApplied) return;
-
-    mapper._mmc3OriginalWrite = mapper.write;
-    mapper._mmc3OriginalClockIrqCounter = mapper.clockIrqCounter;
-    mapper._mmc3IrqFixApplied = true;
-    mapper.irqReloadPending = false;
-
-    mapper.write = function (address, value) {
-      if (address < 0x8000) {
-        Object.getPrototypeOf(Object.getPrototypeOf(mapper)).write.call(
-          this,
-          address,
-          value
-        );
-        return;
-      }
-
-      switch (address & 0xe001) {
-        case 0x8000:
-          this.command = value & 7;
-          {
-            const tmp = (value >> 6) & 1;
-            if (tmp !== this.prgAddressSelect) {
-              this.prgAddressChanged = true;
-            }
-            this.prgAddressSelect = tmp;
-          }
-          this.chrAddressSelect = (value >> 7) & 1;
-          break;
-
-        case 0x8001:
-          this.executeCommand(this.command, value);
-          break;
-
-        case 0xa000:
-          if ((value & 1) !== 0) {
-            this.nes.ppu.setMirroring(this.nes.rom.HORIZONTAL_MIRRORING);
-          } else {
-            this.nes.ppu.setMirroring(this.nes.rom.VERTICAL_MIRRORING);
-          }
-          break;
-
-        case 0xa001:
-          break;
-
-        case 0xc000:
-          this.irqLatchValue = value;
-          break;
-
-        case 0xc001:
-          this.irqReloadPending = true;
-          break;
-
-        case 0xe000:
-          this.irqEnable = 0;
-          this.nes.cpu.irqRequested = false;
-          break;
-
-        case 0xe001:
-          this.irqEnable = 1;
-          break;
-      }
-    };
-
-    mapper.clockIrqCounter = function () {
-      if (this.irqCounter === 0 || this.irqReloadPending) {
-        this.irqCounter = this.irqLatchValue;
-        this.irqReloadPending = false;
-      } else {
-        this.irqCounter--;
-      }
-
-      if (this.irqCounter === 0 && this.irqEnable === 1) {
-        this.nes.cpu.requestIrq(this.nes.cpu.IRQ_NORMAL);
-      }
-    };
-  }
-
-  setMMC3FixEnabled(enabled) {
-    this.mmc3FixEnabled = enabled !== false;
-    this.onStatusUpdate("MMC3 修复开关已更新，重新加载 ROM 后生效");
-  }
-
-  getMapperDebugInfo() {
-    if (!this.nes || !this.nes.rom || !this.nes.mmap) {
-      return { ready: false };
-    }
-    const mapper = Number.isFinite(this.nes.rom.mapperType) ? this.nes.rom.mapperType : -1;
-    const mapperName = (this.nes.mmap.constructor && this.nes.mmap.constructor.name) || "Unknown";
-    return {
-      ready: true,
-      mapper,
-      mapperName,
-      mmc3FixEnabled: this.mmc3FixEnabled,
-      mmc3FixApplied: !!this.nes.mmap._mmc3IrqFixApplied,
-    };
   }
 
   _compressForCloud(state) {
