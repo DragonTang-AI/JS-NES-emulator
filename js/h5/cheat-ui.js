@@ -61,6 +61,7 @@ class CheatUI {
   _getActiveCheatCodes() {
     const codes = [];
     for (const c of this.activeCheats) {
+      if (c.enabled === false) continue;
       if (!Array.isArray(c.codes)) continue;
       for (const entry of c.codes) {
         codes.push(entry);
