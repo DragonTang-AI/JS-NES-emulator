@@ -48,19 +48,20 @@
   </div>
 
   <div id="cheat-indicator" hidden></div>
+  <button id="fullscreen-btn" class="fullscreen-btn" aria-label="全屏">⛶</button>
 
   <div id="slide-menu" hidden>
     <div class="slide-menu-backdrop" id="slide-menu-backdrop"></div>
     <div class="slide-menu-panel">
       <div class="slide-menu-header">
-        <span>菜单</span>
+        <span class="slide-menu-header-title">菜单</span>
         <button id="slide-menu-close">✕</button>
       </div>
       <div class="slide-menu-body">
-        <div class="menu-item" id="menu-account">
+        <div class="menu-item menu-item-full" id="menu-account">
           <span class="menu-item-icon">👤</span>
           <span class="menu-item-label" id="menu-account-label">未登录</span>
-          <span class="menu-item-arrow" id="menu-account-arrow">›</span>
+          <span class="menu-item-arrow-simple">›</span>
         </div>
         <div class="menu-subpage" id="menu-account-subpage" hidden>
           <div class="menu-auth-form" id="menu-auth-form">
@@ -74,28 +75,30 @@
           <div class="menu-auth-info" id="menu-auth-info" hidden>
             <div class="menu-auth-user" id="menu-auth-user"></div>
             <div class="menu-auth-actions">
-              <button id="auth-logout-btn" type="button">退出登录</button>
-              <button id="auth-sync-btn" type="button">↻ 同步云存档</button>
+              <button id="auth-logout-btn" type="button">退出</button>
+              <button id="auth-sync-btn" type="button">↻ 同步</button>
             </div>
           </div>
         </div>
-        <div class="menu-item" id="menu-upload">
+        <div class="menu-item menu-item-full" id="menu-upload">
           <span class="menu-item-icon">📁</span>
           <span class="menu-item-label">上传 ROM</span>
+          <span class="menu-item-arrow-simple">›</span>
         </div>
-        <div class="menu-item" id="menu-library">
-          <span class="menu-item-icon">📚</span>
-          <span class="menu-item-label">游戏库</span>
-        </div>
-        <div class="menu-item" id="menu-favorites">
-          <span class="menu-item-icon">⭐</span>
-          <span class="menu-item-label">收藏</span>
-        </div>
-        <div class="menu-item" id="menu-cheats">
-          <span class="menu-item-icon">⚡</span>
-          <span class="menu-item-label">游戏外挂</span>
-          <span class="menu-item-badge" id="menu-cheats-badge" hidden></span>
-          <span class="menu-item-arrow" id="menu-cheats-arrow">›</span>
+        <div class="menu-grid">
+          <div class="menu-item" id="menu-library">
+            <span class="menu-item-icon">📚</span>
+            <span class="menu-item-label">游戏库</span>
+          </div>
+          <div class="menu-item" id="menu-favorites">
+            <span class="menu-item-icon">⭐</span>
+            <span class="menu-item-label">收藏</span>
+          </div>
+          <div class="menu-item" id="menu-cheats">
+            <span class="menu-item-icon">⚡</span>
+            <span class="menu-item-label">外挂</span>
+            <span class="menu-item-badge" id="menu-cheats-badge" hidden></span>
+          </div>
         </div>
         <div class="menu-subpage" id="menu-cheats-subpage" hidden>
           <div class="menu-cheats-game-list" id="menu-cheats-game-list"></div>
@@ -111,37 +114,46 @@
   <div id="settings-modal" class="settings-modal" hidden>
     <div class="settings-card">
       <div class="settings-header">
-        <span>游戏设置</span>
-        <button id="settings-close" class="settings-close">×</button>
+        <span>设置</span>
+        <button id="settings-close" class="settings-close">✕</button>
       </div>
 
       <div class="settings-row">
         <label for="setting-music">音乐开关</label>
-        <input id="setting-music" type="checkbox">
+        <label class="switch-toggle">
+          <input id="setting-music" type="checkbox">
+          <span class="slider"></span>
+        </label>
       </div>
 
-      <div class="settings-row settings-row-volume">
+      <div class="settings-row">
         <label for="setting-volume">音量</label>
         <input id="setting-volume" type="range" min="0" max="100" step="1">
-        <span id="setting-volume-value">80%</span>
+        <span class="settings-volume-value" id="setting-volume-value">80%</span>
       </div>
 
       <div class="settings-row">
         <label for="setting-joystick-mode">摇杆模式</label>
         <select id="setting-joystick-mode">
-          <option value="floating">浮动摇杆</option>
-          <option value="fixed">固定摇杆</option>
+          <option value="floating">浮动</option>
+          <option value="fixed">固定</option>
         </select>
       </div>
 
       <div class="settings-row">
         <label for="setting-vibration">按键震动</label>
-        <input id="setting-vibration" type="checkbox">
+        <label class="switch-toggle">
+          <input id="setting-vibration" type="checkbox">
+          <span class="slider"></span>
+        </label>
       </div>
 
       <div class="settings-row">
         <label for="setting-show-hint">摇杆提示</label>
-        <input id="setting-show-hint" type="checkbox">
+        <label class="switch-toggle">
+          <input id="setting-show-hint" type="checkbox">
+          <span class="slider"></span>
+        </label>
       </div>
     </div>
   </div>

@@ -26,7 +26,6 @@ class H5App {
     this.slideStatus = document.getElementById("slide-menu-status");
     this.menuAccount = document.getElementById("menu-account");
     this.menuAccountLabel = document.getElementById("menu-account-label");
-    this.menuAccountArrow = document.getElementById("menu-account-arrow");
     this.menuAccountSubpage = document.getElementById("menu-account-subpage");
     this.menuAuthForm = document.getElementById("menu-auth-form");
     this.menuAuthInfo = document.getElementById("menu-auth-info");
@@ -36,7 +35,6 @@ class H5App {
     this.menuFavorites = document.getElementById("menu-favorites");
     this.menuCheats = document.getElementById("menu-cheats");
     this.menuCheatsBadge = document.getElementById("menu-cheats-badge");
-    this.menuCheatsArrow = document.getElementById("menu-cheats-arrow");
     this.menuCheatsSubpage = document.getElementById("menu-cheats-subpage");
     this.cheatIndicator = document.getElementById("cheat-indicator");
     this.menuCheatsGameList = document.getElementById("menu-cheats-game-list");
@@ -308,7 +306,6 @@ class H5App {
     this.menuCheats.addEventListener("click", () => {
       const isOpen = !this.menuCheatsSubpage.hidden;
       this.menuCheatsSubpage.hidden = isOpen;
-      this.menuCheatsArrow.classList.toggle("open", !isOpen);
       this.slideRomList.hidden = true;
       if (!isOpen) this._renderCheatGameList();
     });
@@ -433,6 +430,15 @@ class H5App {
       });
     }
 
+    const fullscreenBtn = document.getElementById("fullscreen-btn");
+    if (fullscreenBtn) {
+      fullscreenBtn.addEventListener("click", () => {
+        this.emulator.toggleFullscreen();
+      });
+    }
+
+    this._bindDoubleTapFullscreen();
+
     this.gamepad = new VirtualGamepad(this.emulator, {
       joystickMode: this.settings.joystickMode,
       vibrationEnabled: this.settings.vibrationEnabled,
@@ -441,6 +447,22 @@ class H5App {
     this.gamepad.init();
     this._applySettings();
     this._syncAuthUI();
+  }
+
+  _bindDoubleTapFullscreen() {
+    const container = document.getElementById("nes-container");
+    if (!container) return;
+    let lastTap = 0;
+    container.addEventListener("click", (e) => {
+      if (e.target !== container && !container.contains(e.target)) return;
+      const now = Date.now();
+      if (now - lastTap < 300) {
+        this.emulator.toggleFullscreen();
+        lastTap = 0;
+      } else {
+        lastTap = now;
+      }
+    });
   }
 
   toggleMenu() {
@@ -453,28 +475,25 @@ class H5App {
 
   openMenu() {
     this.slideMenu.hidden = false;
+    requestAnimationFrame(() => this.slideMenu.classList.add("open"));
     this.menuAccountSubpage.hidden = true;
-    this.menuAccountArrow.classList.remove("open");
     this.menuCheatsSubpage.hidden = true;
-    this.menuCheatsArrow.classList.remove("open");
     this.slideRomList.hidden = true;
   }
 
   closeMenu() {
-    this.slideMenu.hidden = true;
+    this.slideMenu.classList.remove("open");
+    setTimeout(() => { this.slideMenu.hidden = true; }, 200);
   }
 
   _toggleAccountSubpage(forceOpen) {
     const isOpen = !this.menuAccountSubpage.hidden;
     if (forceOpen === true) {
       this.menuAccountSubpage.hidden = false;
-      this.menuAccountArrow.classList.add("open");
     } else if (forceOpen === false) {
       this.menuAccountSubpage.hidden = true;
-      this.menuAccountArrow.classList.remove("open");
     } else {
       this.menuAccountSubpage.hidden = isOpen;
-      this.menuAccountArrow.classList.toggle("open");
     }
     this.slideRomList.hidden = true;
   }
@@ -639,7 +658,6 @@ class H5App {
   async refreshRomList() {
     this.slideRomList.hidden = false;
     this.menuAccountSubpage.hidden = true;
-    this.menuAccountArrow.classList.remove("open");
     this.slideRomList.innerHTML = "";
 
     try {
