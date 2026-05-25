@@ -11,7 +11,7 @@ class CheatUI {
       if (stored) {
         const parsed = JSON.parse(stored);
         if (!Array.isArray(parsed)) return [];
-        const cleaned = parsed.filter((c) => c && typeof c === "object" && Array.isArray(c.codes));
+        const cleaned = parsed.filter((c) => c && typeof c === "object" && Array.isArray(c.codes) && c.enabled !== false);
         if (cleaned.length !== parsed.length) {
           localStorage.setItem("nes-active-cheats", JSON.stringify(cleaned));
         }
@@ -61,7 +61,6 @@ class CheatUI {
   _getActiveCheatCodes() {
     const codes = [];
     for (const c of this.activeCheats) {
-      if (c.enabled === false) continue;
       if (!Array.isArray(c.codes)) continue;
       for (const entry of c.codes) {
         codes.push(entry);
@@ -103,7 +102,7 @@ class CheatUI {
       badge.hidden = true;
       return;
     }
-    const count = this.activeCheats.filter((c) => c.enabled !== false).length;
+    const count = this.activeCheats.length;
     if (count > 0) {
       badge.textContent = count + "项";
       badge.hidden = false;
@@ -119,7 +118,7 @@ class CheatUI {
       indicator.hidden = true;
       return;
     }
-    const active = this.activeCheats.filter((c) => c.enabled !== false);
+    const active = this.activeCheats;
     if (active.length > 0) {
       indicator.textContent = active.map((c) => c.name).join(", ");
       indicator.hidden = false;
@@ -143,7 +142,7 @@ class CheatUI {
     }
     for (const cheat of currentCheats) {
       const existing = this.activeCheats.find((c) => c.id === cheat.id);
-      const enabled = existing ? existing.enabled !== false : false;
+      const enabled = !!existing;
       const item = document.createElement("div");
       item.className = "cheat-item" + (enabled ? " cheat-enabled" : "");
       const label = document.createElement("div");
@@ -179,30 +178,20 @@ class CheatUI {
 
   _enableCheat(cheat) {
     const existing = this.activeCheats.find((c) => c.id === cheat.id);
-    if (existing) {
-      existing.enabled = true;
-    } else {
+    if (!existing) {
       this.activeCheats.push({
         id: cheat.id,
         name: cheat.name,
         codes: cheat.codes,
-        enabled: true,
       });
     }
     this._saveActiveCheats();
   }
 
   _disableCheat(cheat) {
-    const existing = this.activeCheats.find((c) => c.id === cheat.id);
-    if (existing) {
-      existing.enabled = false;
-    } else {
-      this.activeCheats.push({
-        id: cheat.id,
-        name: cheat.name,
-        codes: cheat.codes,
-        enabled: false,
-      });
+    const idx = this.activeCheats.findIndex((c) => c.id === cheat.id);
+    if (idx >= 0) {
+      this.activeCheats.splice(idx, 1);
     }
     this._saveActiveCheats();
   }
