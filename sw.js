@@ -1,4 +1,4 @@
-const CACHE = 'nes-cache-v4';
+const CACHE = 'nes-cache-v5';
 
 const PRECACHE_URLS = [
   '/',
@@ -15,6 +15,7 @@ const PRECACHE_URLS = [
   '/js/core/mapper4-fix.js',
   '/js/pc/pc-app.js',
   '/js/h5/h5-app.js',
+  '/js/h5/cheat-library.js',
   '/js/h5/virtual-gamepad.js',
   '/js/library/library-app.js',
   '/manifest.json',

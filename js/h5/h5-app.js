@@ -43,16 +43,7 @@ class H5App {
     this.cheatModalTitle = document.getElementById("cheat-modal-title");
     this.cheatTableBody = document.getElementById("cheat-table-body");
     this.settingsBtn = document.getElementById("quick-settings-btn");
-
-    this.CHEAT_LIBRARY = [
-      {
-        game: "三目童子",
-        roms: ["MitsumeGaTooru.nes", "Mitsume ga Tooru (Japan).nes"],
-        cheats: [
-          { name: "无限命", desc: "游戏结束后不会减少生命次数", codes: [{ address: 0x007B, value: 0x09 }] },
-        ]
-      }
-    ];
+    this.cheatLibrary = window.NES_CHEAT_LIBRARY || [];
     this.activeCheats = JSON.parse(localStorage.getItem("nes-active-cheats") || "[]");
     this.settingsModal = document.getElementById("settings-modal");
     this.settingsClose = document.getElementById("settings-close");
@@ -110,9 +101,7 @@ class H5App {
       this.saveManager.init();
       this.bindEvents();
       await this.restoreAuthSession();
-      if (this.emulator && this.activeCheats.length > 0) {
-        this.emulator.setCheats(this.activeCheats);
-      }
+      this._syncCheats();
       if (!this.authUser && !this.authPromptDismissed) {
         setTimeout(() => {
           this.authPromptModal.hidden = false;
@@ -159,6 +148,7 @@ class H5App {
         if (!err) {
           this.emulator.fitInParent();
           this.virtualGamepad.hidden = false;
+          this._syncCheats();
         }
       });
     }
@@ -177,6 +167,7 @@ class H5App {
           if (!err) {
             this.emulator.fitInParent();
             this.virtualGamepad.hidden = false;
+            this._syncCheats();
           }
         });
         return true;
@@ -188,6 +179,7 @@ class H5App {
         this.currentRom = displayName || romParam;
         this.emulator.fitInParent();
         this.virtualGamepad.hidden = false;
+        this._syncCheats();
         return true;
       }
     } catch (e) {
@@ -355,6 +347,7 @@ class H5App {
         this.currentRom = file.name;
         this.emulator.fitInParent();
         this.virtualGamepad.hidden = false;
+        this._syncCheats();
         this.closeMenu();
       } catch (err) {
         this.handleError(err);
@@ -697,12 +690,14 @@ class H5App {
     playBtn.className = "rom-name";
     playBtn.textContent = (isBundled ? " " : "") + name;
     playBtn.addEventListener("click", async () => {
+      this.currentRom = name;
       if (isBundled && url) {
         this.emulator.loadROMFromURL(url, name, (err) => {
           if (!err) {
             this.emulator.fitInParent();
             this.virtualGamepad.hidden = false;
             this.closeMenu();
+            this._syncCheats();
           }
         });
       } else {
@@ -712,9 +707,9 @@ class H5App {
           this.emulator.fitInParent();
           this.virtualGamepad.hidden = false;
           this.closeMenu();
+          this._syncCheats();
         }
       }
-      this.currentRom = name;
       this.refreshRomList();
     });
 
@@ -753,19 +748,27 @@ class H5App {
   }
 
   _getActiveCheatCodes() {
+    const lib = this._getCurrentCheatLibrary();
+    if (!lib) return [];
     const codes = [];
     this.activeCheats.forEach((ac) => {
-      for (const lib of this.CHEAT_LIBRARY) {
-        if (lib.game === ac.game) {
-          for (const cheat of lib.cheats) {
-            if (cheat.name === ac.name && ac.enabled) {
-              codes.push(...cheat.codes);
-            }
-          }
+      if (ac.game !== lib.game || !ac.enabled) return;
+      for (const cheat of lib.cheats) {
+        if (cheat.name === ac.name) {
+          codes.push(...cheat.codes);
         }
       }
     });
     return codes;
+  }
+
+  _getCurrentCheatLibrary() {
+    const rom = this.currentRom || (this.emulator && this.emulator.getCurrentRom && this.emulator.getCurrentRom()) || "";
+    if (!rom) return null;
+    return this.cheatLibrary.find((lib) => {
+      if (lib.game === rom) return true;
+      return (lib.roms || []).some((name) => name === rom);
+    }) || null;
   }
 
   _syncCheats() {
@@ -777,7 +780,17 @@ class H5App {
 
   _renderCheatGameList() {
     this.menuCheatsGameList.innerHTML = "";
-    this.CHEAT_LIBRARY.forEach((lib) => {
+    const lib = this._getCurrentCheatLibrary();
+    if (!lib) {
+      const empty = document.createElement("div");
+      empty.className = "cheat-game-empty";
+      empty.textContent = this.currentRom ? "该游戏暂无外挂库" : "请先加载游戏";
+      this.menuCheatsGameList.appendChild(empty);
+      this._syncCheats();
+      return;
+    }
+
+    [lib].forEach((lib) => {
       const item = document.createElement("div");
       item.className = "cheat-game-item";
 
@@ -803,8 +816,11 @@ class H5App {
   }
 
   _openCheatModal(game) {
-    const lib = this.CHEAT_LIBRARY.find((l) => l.game === game);
-    if (!lib) return;
+    const lib = this._getCurrentCheatLibrary();
+    if (!lib || lib.game !== game) {
+      this.updateStatus("该游戏暂无外挂库");
+      return;
+    }
     this.cheatModalTitle.textContent = game + " - 外挂";
     this.cheatTableBody.innerHTML = "";
     lib.cheats.forEach((cheat) => {
@@ -838,6 +854,8 @@ class H5App {
           this.activeCheats.push({ game, name: cheat.name, enabled: true });
         }
         this._syncCheats();
+        const activeNow = this.activeCheats.some((ac) => ac.game === game && ac.name === cheat.name && ac.enabled);
+        this.updateStatus((activeNow ? "已启用：" : "已关闭：") + cheat.name);
         this._openCheatModal(game);
       });
       tdToggle.appendChild(toggle);
