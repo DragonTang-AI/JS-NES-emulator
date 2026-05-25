@@ -10,7 +10,12 @@ class CheatUI {
       const stored = localStorage.getItem("nes-active-cheats");
       if (stored) {
         const parsed = JSON.parse(stored);
-        return Array.isArray(parsed) ? parsed : [];
+        if (!Array.isArray(parsed)) return [];
+        const cleaned = parsed.filter((c) => c && typeof c === "object" && Array.isArray(c.codes));
+        if (cleaned.length !== parsed.length) {
+          localStorage.setItem("nes-active-cheats", JSON.stringify(cleaned));
+        }
+        return cleaned;
       }
     } catch (e) {
       // ignore
@@ -56,6 +61,7 @@ class CheatUI {
   _getActiveCheatCodes() {
     const codes = [];
     for (const c of this.activeCheats) {
+      if (!Array.isArray(c.codes)) continue;
       for (const entry of c.codes) {
         codes.push(entry);
       }
