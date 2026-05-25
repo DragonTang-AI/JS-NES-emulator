@@ -46,7 +46,7 @@ window.NES_CHEAT_LIBRARY = [
   },
   {
     game: "魂斗罗",
-    match: ["魂斗罗", "Contra", "Contra (USA).nes"],
+    match: ["魂斗罗", "Contra", "Contra (USA).nes", "100-in-1 Contra Function 16"],
     cheats: [
       {
         id: "contra-inf-life",

@@ -54,6 +54,7 @@ class H5App {
       { name: "2010 Street Fighter (Japan) (Beta).nes", url: "/roms/2010 Street Fighter (Japan) (Beta).nes", label: "2010 街头霸王" },
       { name: "Colour 2001 Streetfighter II (Asia) (En) (Pirate).nes", url: "/roms/Colour 2001 Streetfighter II (Asia) (En) (Pirate).nes", label: "2001 街头霸王II" },
       { name: "Crystalis (USA, Europe) (SNK 40th Anniversary Collection).nes", url: "/roms/Crystalis (USA, Europe) (SNK 40th Anniversary Collection).nes", label: "水晶之剑" },
+      { name: "100-in-1 Contra Function 16 (Asia) (En) (Pirate).nes", url: "/roms/100-in-1 Contra Function 16 (Asia) (En) (Pirate).nes", label: "100-in-1 魂斗罗" },
     ];
     this.authUI = new AuthUI(this);
     this.cheatUI = new CheatUI(this);
