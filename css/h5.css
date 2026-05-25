@@ -193,6 +193,17 @@ body {
   transition: transform 0.2s;
 }
 
+.menu-item-badge {
+  font-size: 10px;
+  background: var(--accent-color);
+  color: #fff;
+  padding: 1px 6px;
+  border-radius: 8px;
+  line-height: 1.4;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
 .menu-item-arrow.open {
   transform: rotate(90deg);
 }
@@ -1035,4 +1046,22 @@ body {
   background: var(--accent-color);
   border-color: var(--accent-color);
   color: #fff;
+}
+
+/* ── Cheat Indicator ── */
+#cheat-indicator {
+  position: fixed;
+  top: calc(env(safe-area-inset-top) + 56px);
+  right: 10px;
+  z-index: 1500;
+  font-size: 10px;
+  background: rgba(233, 69, 96, 0.85);
+  color: #fff;
+  padding: 3px 8px;
+  border-radius: 10px;
+  pointer-events: none;
+  white-space: nowrap;
+  max-width: 50vw;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }

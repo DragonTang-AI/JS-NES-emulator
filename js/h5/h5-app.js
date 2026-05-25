@@ -35,8 +35,10 @@ class H5App {
     this.menuLibrary = document.getElementById("menu-library");
     this.menuFavorites = document.getElementById("menu-favorites");
     this.menuCheats = document.getElementById("menu-cheats");
+    this.menuCheatsBadge = document.getElementById("menu-cheats-badge");
     this.menuCheatsArrow = document.getElementById("menu-cheats-arrow");
     this.menuCheatsSubpage = document.getElementById("menu-cheats-subpage");
+    this.cheatIndicator = document.getElementById("cheat-indicator");
     this.menuCheatsGameList = document.getElementById("menu-cheats-game-list");
     this.cheatModal = document.getElementById("cheat-modal");
     this.cheatModalClose = document.getElementById("cheat-modal-close");
@@ -765,9 +767,13 @@ class H5App {
   _getCurrentCheatLibrary() {
     const rom = this.currentRom || (this.emulator && this.emulator.getCurrentRom && this.emulator.getCurrentRom()) || "";
     if (!rom) return null;
+    const romLower = rom.toLowerCase().replace(/\.[^.]+$/, "");
     return this.cheatLibrary.find((lib) => {
       if (lib.game === rom) return true;
-      return (lib.roms || []).some((name) => name === rom);
+      return (lib.roms || []).some((name) => {
+        const nLower = name.toLowerCase().replace(/\.[^.]+$/, "");
+        return nLower === romLower || romLower.includes(nLower) || nLower.includes(romLower);
+      });
     }) || null;
   }
 
@@ -775,6 +781,35 @@ class H5App {
     localStorage.setItem("nes-active-cheats", JSON.stringify(this.activeCheats));
     if (this.emulator) {
       this.emulator.setCheats(this._getActiveCheatCodes());
+    }
+    this._updateCheatBadge();
+    this._updateCheatIndicator();
+  }
+
+  _updateCheatBadge() {
+    const lib = this._getCurrentCheatLibrary();
+    if (lib && lib.cheats && lib.cheats.length > 0) {
+      this.menuCheatsBadge.textContent = lib.cheats.length + "\u9879";
+      this.menuCheatsBadge.hidden = false;
+    } else {
+      this.menuCheatsBadge.hidden = true;
+    }
+  }
+
+  _updateCheatIndicator() {
+    const lib = this._getCurrentCheatLibrary();
+    let names = [];
+    if (lib) {
+      this.activeCheats.forEach((ac) => {
+        if (ac.game !== lib.game || !ac.enabled) return;
+        names.push(ac.name);
+      });
+    }
+    if (names.length > 0) {
+      this.cheatIndicator.textContent = "\u26A1 " + names.join("\u3001");
+      this.cheatIndicator.hidden = false;
+    } else {
+      this.cheatIndicator.hidden = true;
     }
   }
 
