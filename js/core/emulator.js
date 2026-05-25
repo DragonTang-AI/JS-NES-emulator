@@ -460,6 +460,35 @@ class Emulator {
     });
   }
 
+  _compressForCloud(state) {
+    try {
+      if (typeof LZString !== "undefined") {
+        const json = JSON.stringify(state);
+        const compressed = LZString.compressToBase64(json);
+        if (compressed.length < json.length * 0.9) {
+          return { _c: true, d: compressed };
+        }
+      }
+    } catch (e) {
+      console.warn("Compress failed, sending uncompressed:", e);
+    }
+    return state;
+  }
+
+  _decompressFromCloud(state) {
+    if (state && state._c === true && typeof state.d === "string") {
+      try {
+        if (typeof LZString !== "undefined") {
+          const json = LZString.decompressFromBase64(state.d);
+          if (json) return JSON.parse(json);
+        }
+      } catch (e) {
+        console.warn("Decompress failed, falling back:", e);
+      }
+    }
+    return state;
+  }
+
   async saveState(slot) {
     if (!this.nes || !this.currentRom || !this.saveDB) {
       this.onStatusUpdate("Save system not ready.");
@@ -497,11 +526,12 @@ class Emulator {
 
       let cloudOk = false;
       if (this.cloudToken) {
+        const cloudState = this._compressForCloud(state);
         const cloudResult = await this._cloudFetch(
           "/saves/" + encodeURIComponent(this.currentRom) + "/" + slot,
           {
             method: "PUT",
-            body: JSON.stringify({ state, timestamp: now }),
+            body: JSON.stringify({ state: cloudState, timestamp: now }),
           }
         );
         cloudOk = cloudResult && !cloudResult._error;
@@ -541,19 +571,22 @@ class Emulator {
         const cloudData = await this._cloudFetch(
           "/saves/" + encodeURIComponent(this.currentRom) + "/" + slot
         );
-        if (cloudData && !cloudData._error && cloudData.state && this.nes.fromJSON) {
-          this.nes.fromJSON(cloudData.state);
-          const cloudUser = this.cloudUser ? " (" + (this.cloudUser.username || this.cloudUser) + ")" : "";
-this.onStatusUpdate("已从云存档读取 Slot " + slot + cloudUser);
+        if (cloudData && !cloudData._error && cloudData.state) {
+          const state = this._decompressFromCloud(cloudData.state);
+          if (state && this.nes.fromJSON) {
+            this.nes.fromJSON(state);
+            const cloudUser = this.cloudUser ? " (" + (this.cloudUser.username || this.cloudUser) + ")" : "";
+            this.onStatusUpdate("已从云存档读取 Slot " + slot + cloudUser);
 
-          const key = this.currentRom + "_slot" + slot;
-          try {
-            const tx = this.saveDB.transaction("saves", "readwrite");
-            const store = tx.objectStore("saves");
-            store.put({ key, state: cloudData.state, timestamp: cloudData.timestamp || Date.now(), rom: this.currentRom });
-          } catch (e) { /* cache best-effort */ }
+            const key = this.currentRom + "_slot" + slot;
+            try {
+              const tx = this.saveDB.transaction("saves", "readwrite");
+              const store = tx.objectStore("saves");
+              store.put({ key, state, timestamp: cloudData.timestamp || Date.now(), rom: this.currentRom });
+            } catch (e) { /* cache best-effort */ }
 
-          return { ok: true, source: "cloud" };
+            return { ok: true, source: "cloud" };
+          }
         }
       }
 
@@ -707,9 +740,10 @@ this.onStatusUpdate("已从云存档读取 Slot " + slot + cloudUser);
         const cloudTs = cloudMap[i] || 0;
 
         if (localTs > cloudTs && localData) {
+          const cloudState = this._compressForCloud(localData.state);
           const r = await this._cloudFetch(
             "/saves/" + encodeURIComponent(this.currentRom) + "/" + i,
-            { method: "PUT", body: JSON.stringify({ state: localData.state, timestamp: localTs }) }
+            { method: "PUT", body: JSON.stringify({ state: cloudState, timestamp: localTs }) }
           );
           if (r && !r._error) pushed++;
           else failed++;
@@ -718,10 +752,11 @@ this.onStatusUpdate("已从云存档读取 Slot " + slot + cloudUser);
             "/saves/" + encodeURIComponent(this.currentRom) + "/" + i
           );
           if (cloudData && !cloudData._error && cloudData.state) {
+            const state = this._decompressFromCloud(cloudData.state);
             try {
               const tx = this.saveDB.transaction("saves", "readwrite");
               const store = tx.objectStore("saves");
-              store.put({ key, state: cloudData.state, timestamp: cloudData.timestamp, rom: this.currentRom });
+              store.put({ key, state, timestamp: cloudData.timestamp, rom: this.currentRom });
             } catch (e) { /* skip */ }
             pulled++;
           } else {
