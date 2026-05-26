@@ -250,8 +250,7 @@ class ActionButtonHandler {
       "btn-start": jsnes.Controller.BUTTON_START,
       "btn-select": jsnes.Controller.BUTTON_SELECT,
     };
-    this.activePointers = new Map();
-
+    this.activeTouches = new Map();
     this._bindEvents();
   }
 
@@ -264,48 +263,42 @@ class ActionButtonHandler {
       const el = document.getElementById(id);
       if (!el) continue;
 
-      el.addEventListener("pointerdown", (e) => {
+      el.addEventListener("touchstart", (e) => {
         e.preventDefault();
+        const touch = e.changedTouches[0];
         const nes = this.emulator.getNES();
         if (!nes) return;
         nes.buttonDown(1, button);
         if (this.vibrationEnabled && navigator.vibrate) {
           navigator.vibrate(10);
         }
-        this.activePointers.set(e.pointerId, { id, button, el });
+        this.activeTouches.set(touch.identifier, { id, button, el });
         el.classList.add("pressed");
-        el.setPointerCapture(e.pointerId);
-      });
+      }, { passive: false });
 
-      el.addEventListener("pointerleave", (e) => {
-        if (!el.hasPointerCapture(e.pointerId)) {
-          this._releasePointer(e.pointerId);
-        }
-      });
-
-      el.addEventListener("pointerup", (e) => {
+      el.addEventListener("touchend", (e) => {
         e.preventDefault();
-        this._releasePointer(e.pointerId);
-      });
+        for (const touch of e.changedTouches) {
+          this._releaseTouch(touch.identifier);
+        }
+      }, { passive: false });
 
-      el.addEventListener("pointercancel", (e) => {
-        this._releasePointer(e.pointerId);
+      el.addEventListener("touchcancel", () => {
+        for (const [id] of this.activeTouches) {
+          if (this.activeTouches.get(id).el === el) {
+            this._releaseTouch(id);
+          }
+        }
       });
     }
   }
 
-  _releasePointer(pointerId) {
-    const info = this.activePointers.get(pointerId);
+  _releaseTouch(identifier) {
+    const info = this.activeTouches.get(identifier);
     if (!info) return;
-
     const nes = this.emulator.getNES();
     if (nes) nes.buttonUp(1, info.button);
-
-    this.activePointers.delete(pointerId);
+    this.activeTouches.delete(identifier);
     info.el.classList.remove("pressed");
-
-    try {
-      info.el.releasePointerCapture(pointerId);
-    } catch (err) {}
   }
 }

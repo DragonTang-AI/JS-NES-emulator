@@ -512,7 +512,7 @@ body {
   border: 2px solid rgba(255, 255, 255, 0.15);
   transform: translate(-50%, -50%);
   opacity: 0.25;
-  transition: opacity 120ms ease-out;
+  transition: opacity 30ms ease-out;
   pointer-events: none;
   z-index: 110;
   will-change: transform, opacity;
@@ -531,7 +531,7 @@ body {
   border: 2px solid rgba(233, 69, 96, 0.8);
   box-shadow: 0 2px 8px rgba(233, 69, 96, 0.3);
   transform: translate(-50%, -50%);
-  transition: opacity 120ms ease-out, transform 80ms ease-out;
+  transition: opacity 30ms ease-out, transform 30ms ease-out;
   opacity: 0.5;
   pointer-events: none;
   z-index: 120;
@@ -580,6 +580,7 @@ body {
 }
 
 .action-btn {
+  touch-action: none;
   position: absolute;
   width: 130px;
   height: 130px;
@@ -596,7 +597,7 @@ body {
   user-select: none;
   -webkit-user-select: none;
   touch-action: none;
-  transition: transform 18ms linear, background 18ms linear, box-shadow 18ms linear, border-color 18ms linear;
+  transition: transform 5ms linear, background 5ms linear, box-shadow 5ms linear, border-color 5ms linear;
   will-change: transform;
 }
 
