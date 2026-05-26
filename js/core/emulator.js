@@ -76,8 +76,6 @@ class Emulator {
     this.canvas = document.createElement("canvas");
     this.canvas.width = 256;
     this.canvas.height = 240;
-    this.canvas.style.imageRendering = "pixelated";
-    this.canvas.style.imageRendering = "crisp-edges";
     this.canvas.style.width = "100%";
     this.canvas.style.height = "100%";
     this.container.appendChild(this.canvas);

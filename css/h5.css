@@ -12,6 +12,7 @@ body {
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  background: #000;
   touch-action: none;
   -webkit-touch-callout: none;
   -webkit-user-select: none;
@@ -19,23 +20,6 @@ body {
   position: relative;
 }
 
-body::after {
-  content: "";
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: repeating-linear-gradient(
-    0deg,
-    transparent,
-    transparent 2px,
-    rgba(0, 0, 0, 0.06) 2px,
-    rgba(0, 0, 0, 0.06) 4px
-  );
-  pointer-events: none;
-  z-index: 100;
-}
 
 #nes-container {
   flex: 1;
@@ -49,6 +33,8 @@ body::after {
   aspect-ratio: auto;
   max-width: none;
   border: none;
+  overflow: hidden;
+  background: #000;
   touch-action: none;
   -webkit-touch-callout: none;
   -webkit-user-select: none;
@@ -56,6 +42,7 @@ body::after {
 }
 
 #nes-container canvas {
+#nes-container.smooth canvas {  image-rendering: auto !important;}
   image-rendering: pixelated;
   image-rendering: crisp-edges;
   display: block;
@@ -203,6 +190,7 @@ body::after {
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  background: #000;
   animation: slideUp 0.25s ease-out;
 }
 
@@ -446,6 +434,8 @@ body::after {
   font-size: 16px;
   background: transparent;
   border: none;
+  overflow: hidden;
+  background: #000;
   color: #555;
   cursor: pointer;
   display: flex;
@@ -464,6 +454,8 @@ body::after {
   color: var(--text-color);
   background: transparent;
   border: none;
+  overflow: hidden;
+  background: #000;
   text-align: left;
   font-family: var(--font-mono);
   cursor: pointer;
@@ -902,6 +894,8 @@ body::after {
   background: var(--border-color);
   outline: none;
   border: none;
+  overflow: hidden;
+  background: #000;
 }
 
 .settings-row input[type="range"]::-webkit-slider-thumb {
@@ -1120,6 +1114,7 @@ body::after {
   background: var(--secondary-color);
   border-radius: 2px;
   overflow: hidden;
+  background: #000;
   margin-bottom: 10px;
 }
 
@@ -1236,6 +1231,7 @@ body::after {
   max-width: 500px;
   max-height: 75vh;
   overflow: hidden;
+  background: #000;
   display: flex;
   flex-direction: column;
   animation: modalIn 0.2s ease-out;
@@ -1360,6 +1356,7 @@ body::after {
   white-space: nowrap;
   max-width: 50vw;
   overflow: hidden;
+  background: #000;
   text-overflow: ellipsis;
 }
 

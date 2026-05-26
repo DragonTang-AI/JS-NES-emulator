@@ -8,6 +8,7 @@ class H5App {
       joystickMode: "floating",
       vibrationEnabled: true,
       showJoystickHint: true,
+      pixelFilter: true,
     };
     this.emulator = null;
     this.romManager = null;

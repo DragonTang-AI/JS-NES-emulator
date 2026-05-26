@@ -84,6 +84,7 @@ class SettingsUI {
         this.applySettings();
       });
     }
+    var settingPixelFilter = document.getElementById("setting-pixel-filter");    if (settingPixelFilter) {      settingPixelFilter.addEventListener("change", function() {        this.app.settings.pixelFilter = settingPixelFilter.checked;        this._saveSettings();        this.applySettings();      }.bind(this));    }
   }
 
   _loadSettings() {
@@ -124,6 +125,8 @@ class SettingsUI {
     if (settingJoystickMode) settingJoystickMode.value = this.app.settings.joystickMode || "floating";
     if (settingVibration) settingVibration.checked = this.app.settings.vibrationEnabled !== false;
     if (settingShowHint) settingShowHint.checked = this.app.settings.showJoystickHint !== false;
+    var settingPixelFilter = document.getElementById("setting-pixel-filter");
+    if (settingPixelFilter) settingPixelFilter.checked = this.app.settings.pixelFilter !== false;
   }
 
   applySettings() {
@@ -132,6 +135,7 @@ class SettingsUI {
       this.app.emulator.setVolume((this.app.settings.volume ?? 80) / 100);
     }
     if (this.app.gamepad) {
+    var container = document.getElementById("nes-container");    if (container) {      var canvas = container.querySelector("canvas");      if (canvas) {        canvas.style.imageRendering = "";      }      if (this.app.settings.pixelFilter === false) {        container.classList.add("smooth");      } else {        container.classList.remove("smooth");      }    }
       this.app.gamepad.setJoystickMode(this.app.settings.joystickMode || "floating");
       this.app.gamepad.setVibrationEnabled(this.app.settings.vibrationEnabled !== false);
       this.app.gamepad.setShowHint(this.app.settings.showJoystickHint !== false);
